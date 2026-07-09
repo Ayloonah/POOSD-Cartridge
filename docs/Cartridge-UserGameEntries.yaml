@@ -1,0 +1,152 @@
+openapi: 3.0.0
+info:
+  description: This is the API documentation for the User Game Entries endpoints of the Cartridge Web and Mobile Application.
+  version: 1.0.0
+  title: Cartridge - User Game Entries
+  contact:
+    email: Julianbir123@gmail.com
+
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+tags:
+  - name: User Game Entries
+    description: Game entries owned by users
+
+paths:
+  /user-games:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Get all game Entries for a User
+      operationId: getAllUserGame
+      description: Get all game Entries for a User
+      responses:
+        '200':
+          description: Retrieved All Game Entries Successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserGames'
+
+        '404':
+          description: URL Not Found
+
+  /user-games/{entryId}:
+    parameters:
+    - name: entryId
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Get single game Entry for a User
+      operationId: getUserGame
+      description: Get single game Entry for a User
+      responses:
+        '200':
+          description:  Retrieved Game Entry Successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGames'
+        '404':
+          description: URL Not Found
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Update single game Entry for a User
+      operationId: updateUserGame
+      description: Update single game Entry for a User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserGames'
+      responses:
+        '200':
+          description:  Updated Game Entry Successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGames'
+        '404':
+          description: Game entry NOT Found
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Delete single game Entry for a User
+      operationId: deleteUserGame
+      description: Delete single game Entry for a User
+      responses:
+        '200':
+          description:  Deleted Game Entry Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+        '404':
+          description: Could NOT delete game
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserGames:
+      type: object
+      required:
+        - gameId
+      properties:
+        gameId:
+          type: integer
+          example: 1234
+        listId:
+          type: integer
+          example: 1234
+        played:
+          type: boolean
+        hoursPlayed:
+          type: integer
+          example: 36
+        rating:
+          type: integer
+          example: 5
+        review:
+          type: string
+          example: "This game is great!"
+        platformPlayed:
+          type: string
+          example: "Playstation"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+
+servers:
+  - url: http://www.cartridgeapp.fun
