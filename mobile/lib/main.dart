@@ -1,11 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'services/auth_state.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AuthState(),
+      child: const MyApp(),
+    ),
+  ); 
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    final authState = Provider.of<AuthState>(context, listen: false);
+    authState.tryAutoLogin();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +69,14 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text('You have pushed the button this many times:'),
+            Consumer<AuthState>(
+              builder: (context, authState, child) {
+                return Text(
+                  authState.isLoggedIn ? 'Logged in as ${authState.username}' : 'Not logged in',
+                );
+              },
+            ),
+
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
