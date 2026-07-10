@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(
@@ -34,7 +35,8 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Cartridge'),
+        // home: const MyHomePage(title: 'Cartridge'),
+        home: const LoginScreen(), // for testing, replace with page you're trying to test
     );
   }
 }
