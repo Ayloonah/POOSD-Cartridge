@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
 import 'email_verif_screen.dart';
+import 'login_screen.dart';
+import 'package:mobile/constants/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -111,7 +114,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() {
       if (_passwordValidationController.text.isEmpty) {
         _passwordMismatch = null;
-      } else if (_passwordController.text != _passwordValidationController.text) {
+      } else if (_passwordController.text !=
+          _passwordValidationController.text) {
         _passwordMismatch = 'Passwords don\'t match';
       } else {
         _passwordMismatch = null;
@@ -163,17 +167,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Checking if the form is ready to send yet or not
   bool _isFormValid() {
-  return _usernameController.text.isNotEmpty &&
-      !_usernameController.text.contains(' ') &&
-      _passwordController.text.isNotEmpty &&
-      _getPasswordError(_passwordController.text) == null &&
-      _passwordValidationController.text.isNotEmpty &&
-      _emailController.text.isNotEmpty &&
-      RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text) &&
-      _emailValidationController.text.isNotEmpty &&
-      _emailMismatch == null &&
-      _passwordMismatch == null;
-}
+    return _usernameController.text.isNotEmpty &&
+        !_usernameController.text.contains(' ') &&
+        _passwordController.text.isNotEmpty &&
+        _getPasswordError(_passwordController.text) == null &&
+        _passwordValidationController.text.isNotEmpty &&
+        _emailController.text.isNotEmpty &&
+        RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text) &&
+        _emailValidationController.text.isNotEmpty &&
+        _emailMismatch == null &&
+        _passwordMismatch == null;
+  }
 
   // Registration logic, API interaction
   Future<void> _handleRegister() async {
@@ -199,16 +203,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       // If response from API is good
-      if (response.statusCode ==  201) {
+      if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
         Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => VerifyEmailScreen(username: data['username'], email: _emailController.text)),
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyEmailScreen(
+              username: data['username'],
+              email: _emailController.text,
+            ),
+          ),
         );
       } else {
         final data = jsonDecode(response.body);
         setState(() {
-          _errorMessage = data['error'] ?? 'Registration failed. Please check your information and try again.';
+          _errorMessage =
+              data['error'] ??
+              'Registration failed. Please check your information and try again.';
         });
       }
     } catch (e) {
@@ -224,114 +235,196 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     }
   }
-  
+
   // Screen contents
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      // Registration form
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _usernameController,
-              focusNode: _usernameFocusNode,
-              decoration: InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: _usernameError != null ? Colors.red : Colors.black,
+      backgroundColor: AppColors.darkGreen,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel('Username'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _usernameController,
+                focusNode: _usernameFocusNode,
+                style: GoogleFonts.roboto(color: Colors.black87),
+                decoration: _fieldDecoration(
+                  hint: 'Username',
+                  errorText: _usernameError,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              _buildLabel('Password'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passwordController,
+                focusNode: _passwordFocusNode,
+                obscureText: true,
+                style: GoogleFonts.roboto(color: Colors.black87),
+                decoration: _fieldDecoration(
+                  hint: 'Password',
+                  errorText: _passwordError,
+                  helperText:
+                      '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              _buildLabel('Confirm Password'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passwordValidationController,
+                obscureText: true,
+                style: GoogleFonts.roboto(color: Colors.black87),
+                decoration: _fieldDecoration(
+                  hint: 'Password',
+                  errorText: _passwordMismatch,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              _buildLabel('Email Address'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _emailController,
+                focusNode: _emailFocusNode,
+                style: GoogleFonts.roboto(color: Colors.black87),
+                decoration: _fieldDecoration(
+                  hint: 'Email Address',
+                  errorText: _emailFormatError,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              _buildLabel('Confirm Your Email'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _emailValidationController,
+                style: GoogleFonts.roboto(color: Colors.black87),
+                decoration: _fieldDecoration(
+                  hint: 'Email Address',
+                  errorText: _emailMismatch,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              if (_errorMessage != null)
+                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 8),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    disabledBackgroundColor: const Color(
+                      0xFFE0E0E0,
+                    ), // same solid grey, no opacity
+                    foregroundColor: Colors.black54,
+                    disabledForegroundColor:
+                        Colors.black26, // this signals "disabled" instead
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: (_isLoading || !_isFormValid())
+                      ? null
+                      : _handleRegister,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Register',
+                              style: GoogleFonts.roboto(
+                                color: Colors.black54,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.lock,
+                              size: 16,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Sign in here',
+                        style: GoogleFonts.roboto(color: AppColors.textLight),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward,
+                        size: 16,
+                        color: AppColors.textLight,
+                      ),
+                    ],
                   ),
                 ),
-                errorText: _usernameError,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              focusNode: _passwordFocusNode,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: _passwordError != null ? Colors.red : Colors.black,
-                  ),
-                ),
-                helperText: '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
-                helperMaxLines: 2,
-                errorText: _passwordError,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordValidationController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirm your Password',
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: _passwordMismatch != null ? Colors.red : Colors.black,
-                  ),
-                ),
-                errorText: _passwordMismatch,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              focusNode: _emailFocusNode,
-              decoration: InputDecoration(
-                labelText: 'Email Address',
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: _emailFormatError != null ? Colors.red : Colors.black,
-                  ),
-                ),
-                errorText: _emailFormatError,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailValidationController,
-              decoration: InputDecoration(
-                labelText: 'Confirm Your Email',
-                border: OutlineInputBorder(),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: _emailMismatch != null ? Colors.red : Colors.black,
-                  ),
-                ),
-                errorText: _emailMismatch,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_errorMessage != null)
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red),
-              ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: (_isLoading || !_isFormValid()) ? null : _handleRegister,
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Register'),
-            ),
-          ],
+            ],
+          ),
         ),
-      )
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 14),
+    );
+  }
+
+  InputDecoration _fieldDecoration({
+    required String hint,
+    String? errorText,
+    String? helperText,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.roboto(color: Colors.black45),
+      filled: true,
+      fillColor: AppColors.lightGreen,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      errorText: errorText,
+      helperText: helperText,
+      helperMaxLines: 2,
+      helperStyle: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 11),
     );
   }
 }
