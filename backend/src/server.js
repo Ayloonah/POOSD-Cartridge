@@ -13,6 +13,13 @@ app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
+// API routes
+const apiRouter = express.Router();
+apiRouter.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+app.use("/api", apiRouter);
+
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
