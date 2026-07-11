@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 
+const authRoutes = require("./routes/auth");
+
 const app = express();
 
 // Allows your backend to read JSON request bodies
@@ -18,6 +20,10 @@ const apiRouter = express.Router();
 apiRouter.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
+app.use("/api", apiRouter);
+
+// Mount auth routes to API router
+apiRouter.use("/auth", authRoutes);
 app.use("/api", apiRouter);
 
 // Connect to MongoDB
