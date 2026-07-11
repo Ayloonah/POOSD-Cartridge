@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:mobile/screens/forgot_pw_screen.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
 import 'screens/login_screen.dart';
+import 'screens/reset_pw_screen.dart';
 
 void main() {
+  // So web links look like /reset-password?token=... instead of /#/reset-password?token=...
+  usePathUrlStrategy();
   runApp(
     ChangeNotifierProvider(
       create: (context) => AuthState(),
@@ -35,8 +40,14 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-        // home: const MyHomePage(title: 'Cartridge'),
-        home: const LoginScreen(), // for testing, replace with page you're trying to test
+      onGenerateRoute: (settings) {
+        final uri = Uri.parse(settings.name ?? '/');
+        if (uri.path == '/reset-password') {
+          return MaterialPageRoute(builder: (context) => const ResetPasswordScreen());
+        }
+        // for testing, replace with page you're trying to test
+        return MaterialPageRoute(builder: (context) => const ForgotPasswordScreen());
+      },
     );
   }
 }

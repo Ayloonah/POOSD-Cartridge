@@ -174,9 +174,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   return _firstNameController.text.isNotEmpty &&
       _lastNameController.text.isNotEmpty &&
       _usernameController.text.isNotEmpty &&
+      !_usernameController.text.contains(' ') &&
       _passwordController.text.isNotEmpty &&
+      _getPasswordError(_passwordController.text) == null &&
       _passwordValidationController.text.isNotEmpty &&
       _emailController.text.isNotEmpty &&
+      RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text) &&
       _emailValidationController.text.isNotEmpty &&
       _emailMismatch == null &&
       _passwordMismatch == null;
