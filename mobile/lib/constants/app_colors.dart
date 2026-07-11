@@ -1,0 +1,9 @@
+// lib/constants/app_colors.dart
+import 'package:flutter/material.dart';
+
+class AppColors {
+  static const darkGreen = Color(0xFF143910); // dark forest green
+  static const lightGreen = Color(0xFF8BAC0F); // lime/olive green
+  static const textLight = Color(0xFFFFFFFF); // white
+  static const textDark = Color(0xFF000000); // dark
+}
