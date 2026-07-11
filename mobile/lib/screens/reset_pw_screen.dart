@@ -162,6 +162,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: _token == null
               ? [
                   const Text(

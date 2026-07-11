@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import 'forgot_pw_screen.dart';
+import 'main_nav_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -58,6 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
           data['token'],
           data['userId'].toString(),
           data['username']
+        );
+
+        if (!mounted) return;
+        // Clear the splash/login stack so the back button can't return to them
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavScreen()),
+          (route) => false,
         );
       } else {
         setState(() {
