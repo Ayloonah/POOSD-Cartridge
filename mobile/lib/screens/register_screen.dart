@@ -16,8 +16,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _emailController = TextEditingController();
   final _emailValidationController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
   final _passwordValidationController = TextEditingController();
 
   // Set up a listener for the email validation
@@ -26,8 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.initState();
     // Listeners initialization
     _emailValidationController.addListener(_checkEmailsMatch);
-    _firstNameController.addListener(_onFieldChanged);
-    _lastNameController.addListener(_onFieldChanged);
     _usernameController.addListener(_onFieldChanged);
     _passwordController.addListener(_onFieldChanged);
     _emailController.addListener(_onFieldChanged);
@@ -128,8 +124,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     // Release listeners
     _emailValidationController.removeListener(_checkEmailsMatch);
-    _firstNameController.removeListener(_onFieldChanged);
-    _lastNameController.removeListener(_onFieldChanged);
     _usernameController.removeListener(_onFieldChanged);
     _passwordController.removeListener(_onFieldChanged);
     _emailController.removeListener(_onFieldChanged);
@@ -145,8 +139,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _emailController.dispose();
     _emailValidationController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
     _usernameFocusNode.dispose();
     _passwordFocusNode.dispose();
     _emailFocusNode.dispose();
@@ -171,12 +163,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Checking if the form is ready to send yet or not
   bool _isFormValid() {
-  return _firstNameController.text.isNotEmpty &&
-      _lastNameController.text.isNotEmpty &&
-      _usernameController.text.isNotEmpty &&
+  return _usernameController.text.isNotEmpty &&
+      !_usernameController.text.contains(' ') &&
       _passwordController.text.isNotEmpty &&
+      _getPasswordError(_passwordController.text) == null &&
       _passwordValidationController.text.isNotEmpty &&
       _emailController.text.isNotEmpty &&
+      RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text) &&
       _emailValidationController.text.isNotEmpty &&
       _emailMismatch == null &&
       _passwordMismatch == null;
@@ -197,8 +190,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final apiService = ApiService();
       final response = await apiService.post('/register', {
-        'firstName': _firstNameController.text,
-        'lastName': _lastNameController.text,
         'email': _emailController.text,
         'username': _usernameController.text,
         'password': _passwordController.text,
@@ -245,22 +236,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(
-                labelText: 'First Name',
-                border: OutlineInputBorder()
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(
-                labelText: 'Last Name',
-                border: OutlineInputBorder()
-              ),
-            ),
-            const SizedBox(height: 16),
             TextField(
               controller: _usernameController,
               focusNode: _usernameFocusNode,
