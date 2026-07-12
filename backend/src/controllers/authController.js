@@ -1,6 +1,9 @@
-const User = require ('.../models/users');
-const bcrypt = require('bycrypt');
+const User = require ('../models/users');
+const bcrypt = require('bcrypt');
 const JWT = require('jsonwebtoken');
+
+const { hashPassword } = require('./hash');
+const { verifyPassword } = require('../utils/hash');
 
 exports.login = async (req, res) => {
     try {
@@ -18,7 +21,7 @@ exports.login = async (req, res) => {
         }
         
         // Check user submitted password to hash password
-        const isMatch = await bycrpt.compare(password, user.password);
+        const isMatch = await verifyPassword(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Password invalid' });
         }
@@ -50,7 +53,35 @@ exports.logout = async(req, res) => {
             message: 'Logout Successful'
         });
     } catch (error) {
-        console.error(err);
+        console.error(error);
         return res.status(500).json({ message: 'Server Error' });
+    }
+}
+
+exports.register = async(req, res) => {
+    try {
+        const { username, password, email } = req.body
+
+        // Validate user inputs
+        if (!username || !password || !email) {
+            return res.status(400).json ({ message: 'Please fill out all fields' });
+        }
+
+        // Check database to ensure user is NOT in database already with the email.
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (user) {
+            return res.status(400).json({ message: 'Account already exists. Please sign in.' });
+        }
+        // Calls utility for hashing the password
+        const securePassword = await hashPassword(password);
+        
+        const newUser = await User.create({
+            username: username,
+            email: email.toLowerCase(),
+            password: securePassword
+        });
+        res.status(201).json({message: 'Account added to DB.'})
+    } catch (err) {
+        res.status(500).json({error: 'Server-side error'});
     }
 }
