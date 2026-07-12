@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:mobile/screens/forgot_pw_screen.dart';
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/main_nav_screen.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +41,7 @@ class MyApp extends StatelessWidget {
         }
         //return MaterialPageRoute(builder: (context) => const AuthGate());
         return MaterialPageRoute(
-          builder: (context) => const MainNavScreen(),
+          builder: (context) => const ForgotPasswordScreen(),
         ); // Change AuthGate()); to whatever screen you wanna test out and comment out the previous line for testing
       },
     );
