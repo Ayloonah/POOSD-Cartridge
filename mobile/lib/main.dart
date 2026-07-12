@@ -34,10 +34,14 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');
         if (uri.path == '/reset-password') {
-          return MaterialPageRoute(builder: (context) => const ResetPasswordScreen());
+          return MaterialPageRoute(
+            builder: (context) => const ResetPasswordScreen(),
+          );
         }
-        return MaterialPageRoute(builder: (context) => const AuthGate());
-        // return MaterialPageRoute(builder: (context) => const MainNavScreen()); // Change AuthGate()); to whatever screen you wanna test out and comment out the previous line for testing
+        //return MaterialPageRoute(builder: (context) => const AuthGate());
+        return MaterialPageRoute(
+          builder: (context) => const MainNavScreen(),
+        ); // Change AuthGate()); to whatever screen you wanna test out and comment out the previous line for testing
       },
     );
   }
