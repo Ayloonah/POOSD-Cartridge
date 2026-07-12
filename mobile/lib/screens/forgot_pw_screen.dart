@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
+import '../widgets/error_message.dart';
 import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -13,9 +14,11 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  // Reads user input and manages it
   final _emailController = TextEditingController();
   final _emailFocusNode = FocusNode();
 
+  // Set up listeners for the email format check
   @override
   void initState() {
     super.initState();
@@ -23,10 +26,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     _emailFocusNode.addListener(_validateEmailOnBlur);
   }
 
+  // Listener to check for changes in the form
   void _onFieldChanged() {
     setState(() {});
   }
 
+  // Make sure the email uses a valid email pattern (something@email.com)
   void _validateEmailOnBlur() {
     if (!_emailFocusNode.hasFocus && _emailController.text.isNotEmpty) {
       setState(() {
@@ -40,6 +45,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
+  // Called automatically when screen is destroyed
   @override
   void dispose() {
     _emailController.removeListener(_onFieldChanged);
@@ -57,11 +63,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
 
+  // Checking if the form is ready to send yet or not
   bool _isFormValid() {
     return _emailController.text.isNotEmpty &&
         RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text);
   }
 
+  // Forgot password logic, API interaction
   Future<void> _handleSubmit() async {
     setState(() {
       _isLoading = true;
@@ -74,8 +82,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         'email': _emailController.text,
       });
 
+      // If widget no longer on screen, leave
       if (!mounted) return;
 
+      // Don't reveal whether the email is registered either way
       if (response.statusCode == 200) {
         setState(() {
           _submitted = true;
@@ -91,6 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _errorMessage = 'Something went wrong. Please try again.';
       });
     } finally {
+      // If widget no longer on screen, skip this
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -125,6 +136,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
   }
 
+  // Screen contents
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,10 +158,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     if (_errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.roboto(color: Colors.red),
+                        child: Center(
+                          child: ErrorMessage(
+                            message: _errorMessage!,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     ElevatedButton(
@@ -225,15 +238,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        errorText: _emailFormatError,
+                        error: _emailFormatError != null
+                            ? ErrorMessage(message: _emailFormatError!)
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 16),
                     if (_errorMessage != null)
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                      Center(
+                        child: ErrorMessage(
+                          message: _errorMessage!,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     const SizedBox(height: 8),
                     ElevatedButton(

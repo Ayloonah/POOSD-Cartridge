@@ -5,6 +5,7 @@ import 'email_verif_screen.dart';
 import 'login_screen.dart';
 import 'package:mobile/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/error_message.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -351,10 +352,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                     const SizedBox(height: 16),
                     if (_errorMessage != null)
-                      Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+                      ErrorMessage(message: _errorMessage!),
                     const SizedBox(height: 8),
 
                     SizedBox(
@@ -467,7 +465,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
-      errorText: errorText,
+      error: errorText != null ? ErrorMessage(message: errorText) : null,
       helperText: helperText,
       helperMaxLines: 2,
       helperStyle: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 11),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
+import '../widgets/error_message.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -12,10 +13,12 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  // Reads user input and manages it
   final _passwordController = TextEditingController();
   final _passwordValidationController = TextEditingController();
   final _passwordFocusNode = FocusNode();
 
+  // Pulled from the URL the emailed reset link points at (?token=...)
   String? _token;
 
   bool _isLoading = false;
@@ -26,6 +29,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Set up listeners, read the token out of the current URL
   @override
   void initState() {
     super.initState();
@@ -37,10 +41,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _passwordFocusNode.addListener(_validatePasswordOnBlur);
   }
 
+  // Listener to check for changes in the form
   void _onFieldChanged() {
     setState(() {});
   }
 
+  // Make sure password matches in both fields
   void _checkPasswordsMatch() {
     setState(() {
       if (_passwordValidationController.text.isEmpty) {
@@ -54,6 +60,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
   }
 
+  // Check that the password is strong enough
   void _validatePasswordOnBlur() {
     if (!_passwordFocusNode.hasFocus && _passwordController.text.isNotEmpty) {
       setState(() {
@@ -62,6 +69,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
   }
 
+  // Handle the error message logic
   String? _getPasswordError(String password) {
     if (password.length < 8 || password.length > 14) {
       return 'Password must be 8-14 characters';
@@ -78,6 +86,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return null;
   }
 
+  // Checking if the form is ready to send yet or not
   bool _isFormValid() {
     return _passwordController.text.isNotEmpty &&
         _passwordValidationController.text.isNotEmpty &&
@@ -85,6 +94,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _getPasswordError(_passwordController.text) == null;
   }
 
+  // Called automatically when screen is destroyed
   @override
   void dispose() {
     _passwordController.removeListener(_onFieldChanged);
@@ -98,6 +108,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
+  // Reset password logic, API interaction
   Future<void> _handleSubmit() async {
     if (_passwordMismatch != null || _token == null) {
       return;
@@ -115,6 +126,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         'password': _passwordController.text,
       });
 
+      // If widget no longer on screen, leave
       if (!mounted) return;
 
       if (response.statusCode == 200) {
@@ -132,6 +144,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _errorMessage = 'Something went wrong. Please try again.';
       });
     } finally {
+      // If widget no longer on screen, skip this
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -147,6 +160,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
+  // Screen contents
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,7 +258,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           color: AppColors.textLight,
                           fontSize: 11,
                         ),
-                        errorText: _passwordError,
+                        error: _passwordError != null
+                            ? ErrorMessage(message: _passwordError!)
+                            : null,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -289,7 +305,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        errorText: _passwordMismatch,
+                        error: _passwordMismatch != null
+                            ? ErrorMessage(message: _passwordMismatch!)
+                            : null,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
@@ -308,10 +326,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     const SizedBox(height: 16),
                     if (_errorMessage != null)
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                      Center(
+                        child: ErrorMessage(
+                          message: _errorMessage!,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     const SizedBox(height: 8),
                     ElevatedButton(

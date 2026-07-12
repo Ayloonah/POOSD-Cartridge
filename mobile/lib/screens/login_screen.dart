@@ -8,6 +8,7 @@ import 'main_nav_screen.dart';
 import 'register_screen.dart';
 import 'package:mobile/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/error_message.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -193,8 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              if (_errorMessage != null)
-                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+              if (_errorMessage != null) ErrorMessage(message: _errorMessage!),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
