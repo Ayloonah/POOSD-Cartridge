@@ -156,6 +156,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _errorMessage;
   String? _emailMismatch;
   String? _passwordMismatch;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   final _usernameFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
@@ -238,162 +240,205 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Screen contents
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.darkGreen,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel('Username'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _usernameController,
-                focusNode: _usernameFocusNode,
-                style: GoogleFonts.roboto(color: Colors.black87),
-                decoration: _fieldDecoration(
-                  hint: 'Username',
-                  errorText: _usernameError,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 48,
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              _buildLabel('Password'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passwordController,
-                focusNode: _passwordFocusNode,
-                obscureText: true,
-                style: GoogleFonts.roboto(color: Colors.black87),
-                decoration: _fieldDecoration(
-                  hint: 'Password',
-                  errorText: _passwordError,
-                  helperText:
-                      '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _buildLabel('Confirm Password'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passwordValidationController,
-                obscureText: true,
-                style: GoogleFonts.roboto(color: Colors.black87),
-                decoration: _fieldDecoration(
-                  hint: 'Password',
-                  errorText: _passwordMismatch,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _buildLabel('Email Address'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailController,
-                focusNode: _emailFocusNode,
-                style: GoogleFonts.roboto(color: Colors.black87),
-                decoration: _fieldDecoration(
-                  hint: 'Email Address',
-                  errorText: _emailFormatError,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              _buildLabel('Confirm Your Email'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailValidationController,
-                style: GoogleFonts.roboto(color: Colors.black87),
-                decoration: _fieldDecoration(
-                  hint: 'Email Address',
-                  errorText: _emailMismatch,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              if (_errorMessage != null)
-                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 8),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE0E0E0),
-                    disabledBackgroundColor: const Color(
-                      0xFFE0E0E0,
-                    ), // same solid grey, no opacity
-                    foregroundColor: Colors.black54,
-                    disabledForegroundColor:
-                        Colors.black26, // this signals "disabled" instead
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildLabel('Username'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _usernameController,
+                      focusNode: _usernameFocusNode,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: _fieldDecoration(
+                        hint: 'Username',
+                        errorText: _usernameError,
+                      ),
                     ),
-                  ),
-                  onPressed: (_isLoading || !_isFormValid())
-                      ? null
-                      : _handleRegister,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                    const SizedBox(height: 20),
+
+                    _buildLabel('Password'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordController,
+                      focusNode: _passwordFocusNode,
+                      obscureText: _obscurePassword,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: _fieldDecoration(
+                        hint: 'Password',
+                        errorText: _passwordError,
+                        helperText:
+                            '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black45,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildLabel('Confirm Password'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordValidationController,
+                      obscureText: _obscureConfirmPassword,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: _fieldDecoration(
+                        hint: 'Password',
+                        errorText: _passwordMismatch,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black45,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildLabel('Email Address'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _emailController,
+                      focusNode: _emailFocusNode,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: _fieldDecoration(
+                        hint: 'Email Address',
+                        errorText: _emailFormatError,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    _buildLabel('Confirm Your Email'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _emailValidationController,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: _fieldDecoration(
+                        hint: 'Email Address',
+                        errorText: _emailMismatch,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    if (_errorMessage != null)
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE0E0E0),
+                          disabledBackgroundColor: const Color(
+                            0xFFE0E0E0,
+                          ), // same solid grey, no opacity
+                          foregroundColor: Colors.black54,
+                          disabledForegroundColor:
+                              Colors.black26, // this signals "disabled" instead
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: (_isLoading || !_isFormValid())
+                            ? null
+                            : _handleRegister,
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Register',
+                                    style: GoogleFonts.roboto(
+                                      color: Colors.black54,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.lock,
+                                    size: 16,
+                                    color: Colors.black54,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Register',
+                              'Sign in here',
                               style: GoogleFonts.roboto(
-                                color: Colors.black54,
-                                fontSize: 16,
+                                color: AppColors.textLight,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             const Icon(
-                              Icons.lock,
+                              Icons.arrow_forward,
                               size: 16,
-                              color: Colors.black54,
+                              color: AppColors.textLight,
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Sign in here',
-                        style: GoogleFonts.roboto(color: AppColors.textLight),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 16,
-                        color: AppColors.textLight,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -410,6 +455,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
     String? errorText,
     String? helperText,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       hintText: hint,
@@ -425,6 +471,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       helperText: helperText,
       helperMaxLines: 2,
       helperStyle: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 11),
+      suffixIcon: suffixIcon,
     );
   }
 }
