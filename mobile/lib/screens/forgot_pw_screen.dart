@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
+import '../widgets/error_message.dart';
 import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -137,87 +140,155 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Forgot Password')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: _submitted
-              ? [
-                  const Text(
-                    'If an account exists for that email, a password reset link has been sent.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+      backgroundColor: AppColors.darkGreen,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _submitted
+                ? [
+                    Text(
+                      'If an account exists for that email, a password reset link has been sent.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(color: AppColors.textLight),
                     ),
-                  ElevatedButton(
-                    onPressed: (_isLoading || _cooldownSeconds > 0) ? null : _handleSubmit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(_cooldownSeconds > 0
-                            ? 'Resend in ${_cooldownSeconds}s'
-                            : 'Resend Reset Link'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _backToLogin,
-                    child: const Text('Back to Login'),
-                  ),
-                ]
-              : [
-                  const Text(
-                    'Enter your email address and we\'ll send you a link to reset your password.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _emailController,
-                    focusNode: _emailFocusNode,
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      border: const OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: _emailFormatError != null ? Colors.red : Colors.black,
+                    const SizedBox(height: 16),
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Center(
+                          child: ErrorMessage(
+                            message: _errorMessage!,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                      errorText: _emailFormatError,
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0E0E0),
+                        disabledBackgroundColor: const Color(0xFFE0E0E0),
+                        foregroundColor: Colors.black54,
+                        disabledForegroundColor: Colors.black26,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: (_isLoading || _cooldownSeconds > 0)
+                          ? null
+                          : _handleSubmit,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              _cooldownSeconds > 0
+                                  ? 'Resend in ${_cooldownSeconds}s'
+                                  : 'Resend Reset Link',
+                              style: GoogleFonts.roboto(fontSize: 16),
+                            ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_errorMessage != null)
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: _backToLogin,
+                        child: Text(
+                          'Back to Login',
+                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                        ),
+                      ),
+                    ),
+                  ]
+                : [
                     Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
+                      'Enter your email address and we\'ll send you a link to reset your password.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(color: AppColors.textLight),
                     ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: (_isLoading || !_isFormValid()) ? null : _handleSubmit,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Send Reset Link'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _backToLogin,
-                    child: const Text('Back to Login'),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Email Address',
+                        style: GoogleFonts.roboto(
+                          color: AppColors.textLight,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _emailController,
+                      focusNode: _emailFocusNode,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Email Address',
+                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        filled: true,
+                        fillColor: AppColors.lightGreen,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        error: _emailFormatError != null
+                            ? ErrorMessage(message: _emailFormatError!)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_errorMessage != null)
+                      Center(
+                        child: ErrorMessage(
+                          message: _errorMessage!,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0E0E0),
+                        disabledBackgroundColor: const Color(0xFFE0E0E0),
+                        foregroundColor: Colors.black54,
+                        disabledForegroundColor: Colors.black26,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: (_isLoading || !_isFormValid())
+                          ? null
+                          : _handleSubmit,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              'Send Reset Link',
+                              style: GoogleFonts.roboto(fontSize: 16),
+                            ),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: _backToLogin,
+                        child: Text(
+                          'Back to Login',
+                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                        ),
+                      ),
+                    ),
+                  ],
+          ),
         ),
       ),
     );

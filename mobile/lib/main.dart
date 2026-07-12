@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:mobile/screens/email_verif_screen.dart';
+import 'package:mobile/screens/forgot_pw_screen.dart';
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/screens/main_nav_screen.dart';
 import 'package:provider/provider.dart';
@@ -34,10 +36,14 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         final uri = Uri.parse(settings.name ?? '/');
         if (uri.path == '/reset-password') {
-          return MaterialPageRoute(builder: (context) => const ResetPasswordScreen());
+          return MaterialPageRoute(
+            builder: (context) => const ResetPasswordScreen(),
+          );
         }
-        return MaterialPageRoute(builder: (context) => const AuthGate());
-        // return MaterialPageRoute(builder: (context) => const MainNavScreen()); // Change AuthGate()); to whatever screen you wanna test out and comment out the previous line for testing
+        //return MaterialPageRoute(builder: (context) => const AuthGate());
+        return MaterialPageRoute(
+          builder: (context) => const AuthGate(),
+        ); // Change AuthGate()); to whatever screen you wanna test out and comment out the previous line for testing
       },
     );
   }
