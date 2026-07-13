@@ -3,12 +3,9 @@ import logo from '../assets/Menu & Fab.png';
 import searchIcon from '../assets/Icon.png';
 
 const mockGames = [
-  { id: 1, title: 'Pokémon Red', releaseYear: 1996 },
-  { id: 2, title: 'Pokémon Gold', releaseYear: 1999 },
-  { id: 3, title: 'Pokémon Ruby', releaseYear: 2002 },
-  { id: 4, title: 'Pokémon Diamond', releaseYear: 2006 },
-  { id: 5, title: 'Pokémon Black', releaseYear: 2010 },
-  { id: 6, title: 'Pokémon X', releaseYear: 2013 },
+  { id: 1, title: 'Pokémon Red', developer: 'Game Freak', rating: '⭐⭐⭐⭐★ (4.5)', coverColor: '#fee2e2' },
+  { id: 2, title: 'Pokémon Gold', developer: 'Game Freak', rating: '⭐⭐⭐⭐⭐ (5.0)', coverColor: '#fef3c7' },
+  { id: 3, title: 'Pokémon Ruby', developer: 'Game Freak', rating: '⭐⭐⭐⭐★ (4.2)', coverColor: '#ecfdf5' },
 ];
 
 const ListView = () => {
@@ -61,15 +58,17 @@ const ListView = () => {
 
           {/* Grid View */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '40px' }}>
-            {mockGames.map((game) => (
-              <div key={game.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: '180px', height: '180px', backgroundColor: '#f1f5f9', borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '2px solid #e2e8f0', marginBottom: '15px' }}>
-                  👾 Cover
-                </div>
-                <span style={{ fontWeight: '700', fontSize: '20px', textAlign: 'center', color: '#143910' }}>{game.title}</span>
-                <span style={{ fontSize: '16px', color: '#64748b' }}>{game.releaseYear}</span>
-              </div>
-            ))}
+           {mockGames.map((game) => (
+  <div key={game.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
+    {/* Dynamic placeholder for cover */}
+    <div style={{ width: '180px', height: '180px', backgroundColor: game.coverColor, borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '2px solid #e2e8f0', marginBottom: '15px' }}>
+      👾 Cover
+    </div>
+    <span style={{ fontWeight: '700', fontSize: '20px', textAlign: 'center', color: '#143910' }}>{game.title}</span>
+    <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'bold' }}>{game.developer}</span>
+    <span style={{ fontSize: '14px', color: '#b45309', marginTop: '4px' }}>{game.rating}</span>
+  </div>
+))}
           </div>
         </div>
       </div>
