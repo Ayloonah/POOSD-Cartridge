@@ -1,0 +1,85 @@
+openapi: 3.0.0
+info:
+  description: This is the API documentation for the Games endpoints of the Cartridge Web and Mobile Application.
+  version: 1.0.0
+  title: Cartridge - Games
+  contact:
+    email: Julianbir123@gmail.com
+
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+tags:
+  - name: Games
+    description: Global game search and caching endpoints
+
+paths:
+  /games/search:
+    get:
+      tags:
+        - Games
+      summary: Get game from global entries
+      operationId: getGlobalGame
+      description: Get game from global entries
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description:  Retrieved Global Game Entry Successful
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Games'
+        '404':
+          description: Game NOT Found
+
+components:
+  schemas:
+    Games:
+      type: object
+      properties:
+        gameId:
+          type: integer
+          example: 1234
+        gameName:
+          type: string
+          example: "Skyrim"
+        coverImage:
+          type: string
+          format: uri
+          example: "https://example.com"
+        genres:
+          type: array
+          items:
+            type: string
+          example:
+            - Action
+            - Adventure
+        platforms:
+          type: array
+          items:
+            type: string
+          example:
+            - Playstation
+            - Xbox
+        releaseDate:
+          type: string
+          format: date
+          example: "2020-03-30"
+        description:
+          type: string
+          example: "Disco Elysium - The Final Cut is a groundbreaking role playing game. You are a detective with a unique skill system at your disposal and a whole city to carve your path across. Interrogate unforgettable characters, crack murders or take bribes. Become a hero or an absolute disaster of a human being."
+        cachedAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+
+servers:
+  - url: http://www.cartridgeapp.fun
