@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import 'home_screen.dart';
 import 'collection_screen.dart';
 import 'lists_screen.dart';
@@ -36,19 +38,46 @@ class _MainNavScreenState extends State<MainNavScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: screens,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _goToTab,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.videogame_asset), label: 'Collection'),
-          NavigationDestination(icon: Icon(Icons.list), label: 'Lists'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
-        ],
+      body: IndexedStack(index: _selectedIndex, children: screens),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: AppColors.darkGreen,
+          indicatorColor: Colors.transparent,
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            return IconThemeData(
+              color: states.contains(WidgetState.selected)
+                  ? Colors.white
+                  : AppColors.lightGreen,
+            );
+          }),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            return GoogleFonts.roboto(
+              color: states.contains(WidgetState.selected)
+                  ? Colors.white
+                  : AppColors.lightGreen,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              fontSize: 12,
+            );
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _goToTab,
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+            NavigationDestination(
+              icon: Icon(Icons.videogame_asset),
+              label: 'Collection',
+            ),
+            NavigationDestination(icon: Icon(Icons.list), label: 'Lists'),
+            NavigationDestination(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

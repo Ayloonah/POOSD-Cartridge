@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -7,20 +9,22 @@ class VerifyEmailScreen extends StatefulWidget {
   final String username;
   final String email;
 
-  const VerifyEmailScreen({super.key, required this.username, required this.email});
+  const VerifyEmailScreen({
+    super.key,
+    required this.username,
+    required this.email,
+  });
 
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  // If we need to resend the verification email
   bool _isResending = false;
   String? _resendMessage;
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
 
-  // Called automatically when screen is destroyed
   @override
   void dispose() {
     _cooldownTimer?.cancel();
@@ -67,56 +71,94 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Email Validation')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Check your email, ${widget.username}!',
-              style: const TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'We sent a verification link to ${widget.email}. After clicking on the link, come back and log in to start your Cartridge collection!',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            if (_resendMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+      backgroundColor: AppColors.darkGreen,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Check your email, ${widget.username}!',
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  color: AppColors.textLight,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We sent a verification link to ${widget.email}. After clicking on the link, come back and log in to start your Cartridge collection!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.roboto(color: AppColors.textLight),
+              ),
+              const SizedBox(height: 24),
+              if (_resendMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _resendMessage!,
+                    style: GoogleFonts.roboto(
+                      color: AppColors.textLight,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightGreen,
+                  disabledBackgroundColor: AppColors.lightGreen,
+                  foregroundColor: AppColors.textDark,
+                  disabledForegroundColor: AppColors.textDark.withOpacity(0.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: (_isResending || _cooldownSeconds > 0)
+                    ? null
+                    : _handleResend,
+                child: _isResending
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textDark,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        _cooldownSeconds > 0
+                            ? 'Resend in ${_cooldownSeconds}s'
+                            : 'Resend Verification Email',
+                        style: GoogleFonts.roboto(fontSize: 16),
+                      ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+                },
                 child: Text(
-                  _resendMessage!,
-                  style: const TextStyle(color: Colors.green),
-                  textAlign: TextAlign.center,
+                  'Back to Login',
+                  style: GoogleFonts.roboto(color: AppColors.textLight),
                 ),
               ),
-            ElevatedButton(
-              onPressed: (_isResending || _cooldownSeconds > 0) ? null : _handleResend,
-              child: _isResending
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(_cooldownSeconds > 0
-                      ? 'Resend in ${_cooldownSeconds}s'
-                      : 'Resend Verification Email'),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              child: const Text('Back to Login'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

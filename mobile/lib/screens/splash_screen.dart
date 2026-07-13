@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import 'package:mobile/constants/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -8,47 +10,78 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.darkGreen,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 90),
+                  const SizedBox(width: 8),
+                  Image.asset('assets/images/little_logo.png', height: 75),
+                ],
+              ),
+              //Image.asset('assets/images/cartridge_logo.png', height: 90),
+              /*const Text(
                 'Cartridge',
                 style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              const Text(
+              ), */
+              const SizedBox(height: 25),
+              Text(
                 'Your gaming library, all in one place.',
-                style: TextStyle(fontSize: 18),
+                style: GoogleFonts.pressStart2p(
+                  fontSize: 25,
+                  color: AppColors.textLight,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Build your personal game library, organize custom lists, rate your games, and write reviews.',
+                style: GoogleFonts.roboto(
+                  fontSize: 15,
+                  color: AppColors.textLight,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightGreen,
+                ),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
                   );
                 },
-                child: const Text('Log In'),
+                child: Text(
+                  'Log In',
+                  style: GoogleFonts.roboto(color: AppColors.textDark),
+                ),
               ),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterScreen(),
+                    ),
                   );
                 },
-                child: const Text('Register'),
+                child: Text(
+                  'Register',
+                  style: GoogleFonts.roboto(color: AppColors.textLight),
+                ),
               ),
             ],
           ),

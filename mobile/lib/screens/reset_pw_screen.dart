@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
+import '../widgets/error_message.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -23,6 +26,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   String? _errorMessage;
   String? _passwordError;
   String? _passwordMismatch;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // Set up listeners, read the token out of the current URL
   @override
@@ -46,7 +51,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() {
       if (_passwordValidationController.text.isEmpty) {
         _passwordMismatch = null;
-      } else if (_passwordController.text != _passwordValidationController.text) {
+      } else if (_passwordController.text !=
+          _passwordValidationController.text) {
         _passwordMismatch = 'Passwords don\'t match';
       } else {
         _passwordMismatch = null;
@@ -129,7 +135,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'This reset link is invalid or has expired. Please request a new one.';
+          _errorMessage =
+              'This reset link is invalid or has expired. Please request a new one.';
         });
       }
     } catch (e) {
@@ -157,92 +164,202 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: _token == null
-              ? [
-                  const Text(
-                    'This password reset link is invalid or has expired.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: _backToLogin,
-                    child: const Text('Back to Login'),
-                  ),
-                ]
-              : _submitted
-                  ? [
-                      const Text(
-                        'Your password has been reset. You can now log in.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
+      backgroundColor: AppColors.darkGreen,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _token == null
+                ? [
+                    Text(
+                      'This password reset link is invalid or has expired.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
                         onPressed: _backToLogin,
-                        child: const Text('Back to Login'),
+                        child: Text(
+                          'Back to Login',
+                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                        ),
                       ),
-                    ]
-                  : [
-                      const Text(
-                        'Enter a new password for your account.',
-                        textAlign: TextAlign.center,
+                    ),
+                  ]
+                : _submitted
+                ? [
+                    Text(
+                      'Your password has been reset. You can now log in.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0E0E0),
+                        disabledBackgroundColor: const Color(0xFFE0E0E0),
+                        foregroundColor: Colors.black54,
+                        disabledForegroundColor: Colors.black26,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordController,
-                        focusNode: _passwordFocusNode,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'New Password',
-                          border: const OutlineInputBorder(),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: _passwordError != null ? Colors.red : Colors.black,
-                            ),
+                      onPressed: _backToLogin,
+                      child: Text(
+                        'Back to Login',
+                        style: GoogleFonts.roboto(fontSize: 16),
+                      ),
+                    ),
+                  ]
+                : [
+                    Text(
+                      'Enter a new password for your account.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'New Password',
+                        style: GoogleFonts.roboto(
+                          color: AppColors.textLight,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordController,
+                      focusNode: _passwordFocusNode,
+                      obscureText: _obscurePassword,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'New Password',
+                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        filled: true,
+                        fillColor: AppColors.lightGreen,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        helperText:
+                            '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
+                        helperMaxLines: 2,
+                        helperStyle: GoogleFonts.roboto(
+                          color: AppColors.textLight,
+                          fontSize: 11,
+                        ),
+                        error: _passwordError != null
+                            ? ErrorMessage(message: _passwordError!)
+                            : null,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black45,
                           ),
-                          helperText: '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
-                          helperMaxLines: 2,
-                          errorText: _passwordError,
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _passwordValidationController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Confirm New Password',
-                          border: const OutlineInputBorder(),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: _passwordMismatch != null ? Colors.red : Colors.black,
-                            ),
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Confirm New Password',
+                        style: GoogleFonts.roboto(
+                          color: AppColors.textLight,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _passwordValidationController,
+                      obscureText: _obscureConfirmPassword,
+                      style: GoogleFonts.roboto(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Confirm New Password',
+                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        filled: true,
+                        fillColor: AppColors.lightGreen,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        error: _passwordMismatch != null
+                            ? ErrorMessage(message: _passwordMismatch!)
+                            : null,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.black45,
                           ),
-                          errorText: _passwordMismatch,
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      if (_errorMessage != null)
-                        Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_errorMessage != null)
+                      Center(
+                        child: ErrorMessage(
+                          message: _errorMessage!,
+                          textAlign: TextAlign.center,
                         ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: (_isLoading || !_isFormValid()) ? null : _handleSubmit,
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Reset Password'),
                       ),
-                    ],
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0E0E0),
+                        disabledBackgroundColor: const Color(0xFFE0E0E0),
+                        foregroundColor: Colors.black54,
+                        disabledForegroundColor: Colors.black26,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: (_isLoading || !_isFormValid())
+                          ? null
+                          : _handleSubmit,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              'Reset Password',
+                              style: GoogleFonts.roboto(fontSize: 16),
+                            ),
+                    ),
+                  ],
+          ),
         ),
       ),
     );
