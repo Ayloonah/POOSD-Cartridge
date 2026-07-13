@@ -56,20 +56,24 @@ const ListView = () => {
             <button style={{ backgroundColor: '#143910', color: '#fff', border: 'none', padding: '14px 25px', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add Game</button>
           </div>
 
-          {/* Grid View */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '40px' }}>
-           {mockGames.map((game) => (
-  <div key={game.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
-    {/* Dynamic placeholder for cover */}
-    <div style={{ width: '180px', height: '180px', backgroundColor: game.coverColor, borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '2px solid #e2e8f0', marginBottom: '15px' }}>
-      👾 Cover
+       {/* Grid View */}
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '40px' }}>
+  {mockGames.map((game) => (
+    <div 
+      key={game.id} 
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}
+      onClick={() => alert(`Opening entry details for: ${game.title} (placeholder page)`)} 
+    >
+      {/*placeholder for cover */}
+      <div style={{ width: '180px', height: '180px', backgroundColor: game.coverColor, borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '2px solid #e2e8f0', marginBottom: '15px' }}>
+        👾 Cover
+      </div>
+      <span style={{ fontWeight: '700', fontSize: '20px', textAlign: 'center', color: '#143910' }}>{game.title}</span>
+      <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'bold' }}>{game.developer}</span>
+      <span style={{ fontSize: '14px', color: '#b45309', marginTop: '4px' }}>{game.rating}</span>
     </div>
-    <span style={{ fontWeight: '700', fontSize: '20px', textAlign: 'center', color: '#143910' }}>{game.title}</span>
-    <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'bold' }}>{game.developer}</span>
-    <span style={{ fontSize: '14px', color: '#b45309', marginTop: '4px' }}>{game.rating}</span>
-  </div>
-))}
-          </div>
+  ))}
+</div>
         </div>
       </div>
     </div>
