@@ -1,5 +1,4 @@
 const User = require ('../models/users');
-const bcrypt = require('bcrypt');
 const JWT = require('jsonwebtoken');
 
 const { hashPassword } = require('../utils/hash');
@@ -23,14 +22,19 @@ exports.login = async (req, res) => {
         // Check user submitted password to hash password
         const isMatch = await verifyPassword(password, user.passwordHash);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Password invalid' });
+            return res.status(400).json({ message: 'Email/Password invalid' });
+        }
+
+        if (!process.env.JWT_SECRET) {
+            console.error("FATAL: JWT_SECRET environment variable is missing!");
+            return res.status(500).json({ message: 'Internal server configuration error '});
         }
 
         // Create and sign a JWT
         const payload = { userId: user.id, role: user.role };
         const token = JWT.sign (
             payload,
-            process.env.JWT_SECRET || 'your_fallback_secret',
+            process.env.JWT_SECRET,
             { expiresIn: '1h'} // Token will expire in 1 hour
         );
 
