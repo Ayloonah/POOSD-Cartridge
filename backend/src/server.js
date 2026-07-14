@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./src/routes/auth");
+const listRoutes = require("./src/routes/listRoutes");
 
 const app = express();
 
@@ -20,11 +21,12 @@ const apiRouter = express.Router();
 apiRouter.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
-app.use("/api", apiRouter);
+
 
 // Mount auth routes to API router
 apiRouter.use("/auth", authRoutes);
-
+apiRouter.use("/lists", listRoutes)
+app.use("/api", apiRouter);
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
