@@ -1,6 +1,6 @@
-import token from 'authController';
+const jwt = require('jsonwebtoken');
 
-export function authenticateToken(req, res, next) {
+function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -8,7 +8,7 @@ export function authenticateToken(req, res, next) {
         return res.status(401).json({ message: 'Token missing' });
     }
 
-    jwt.verify(token. process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             return res.status(403).json({ message: 'Invalid or expired token' });
         }
@@ -17,3 +17,4 @@ export function authenticateToken(req, res, next) {
         next();
     });
 }
+module.exports = { authenticateToken };

@@ -1,4 +1,10 @@
 {
+  "name": "Cartridge",
+  "version": "1.0.0",
+  "scripts": {
+    "start":  "node server.js",
+     "test": "jest --env=node"
+},
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -13,3 +19,5 @@
     "jest": "^30.4.2"
   }
 }
+
+
