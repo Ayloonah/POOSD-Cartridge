@@ -2,7 +2,7 @@ const User = require ('../models/users');
 const bcrypt = require('bcrypt');
 const JWT = require('jsonwebtoken');
 
-const { hashPassword } = require('./hash');
+const { hashPassword } = require('../utils/hash');
 const { verifyPassword } = require('../utils/hash');
 
 exports.login = async (req, res) => {
@@ -21,7 +21,7 @@ exports.login = async (req, res) => {
         }
         
         // Check user submitted password to hash password
-        const isMatch = await verifyPassword(password, user.password);
+        const isMatch = await verifyPassword(password, user.passwordHash);
         if (!isMatch) {
             return res.status(400).json({ message: 'Password invalid' });
         }
@@ -78,10 +78,11 @@ exports.register = async(req, res) => {
         const newUser = await User.create({
             username: username,
             email: email.toLowerCase(),
-            password: securePassword
+            passwordHash: securePassword
         });
         res.status(201).json({message: 'Account added to DB.'})
     } catch (err) {
+        console.error("CRITICAL EXCEPTION", err);
         res.status(500).json({error: 'Server-side error'});
     }
 }

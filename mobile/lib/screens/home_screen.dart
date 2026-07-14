@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../widgets/cover_card.dart';
@@ -43,7 +45,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
 
-      final gamesResponse = await apiService.get('/gameuserentries', token: token);
+      final gamesResponse = await apiService.get(
+        '/gameuserentries',
+        token: token,
+      );
       final listsResponse = await apiService.get('/lists', token: token);
 
       if (!mounted) return;
@@ -56,10 +61,16 @@ class _HomeScreenState extends State<HomeScreen> {
           : <Map<String, dynamic>>[];
 
       // Most recently added games / updated lists first
-      gameEntries.sort((a, b) =>
-          DateTime.parse(b['createdAt']).compareTo(DateTime.parse(a['createdAt'])));
-      lists.sort((a, b) =>
-          DateTime.parse(b['updatedAt']).compareTo(DateTime.parse(a['updatedAt'])));
+      gameEntries.sort(
+        (a, b) => DateTime.parse(
+          b['createdAt'],
+        ).compareTo(DateTime.parse(a['createdAt'])),
+      );
+      lists.sort(
+        (a, b) => DateTime.parse(
+          b['updatedAt'],
+        ).compareTo(DateTime.parse(a['updatedAt'])),
+      );
 
       setState(() {
         _recentGames = gameEntries.take(5).toList();
@@ -84,7 +95,25 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -97,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
+                        style: GoogleFonts.roboto(color: Colors.red),
                       ),
                     ),
                   _buildSection(
@@ -145,8 +174,21 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: onSeeAll, child: const Text('See All')),
+            Text(
+              title,
+              style: GoogleFonts.vt323(
+                fontSize: 30,
+                color: AppColors.darkGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: onSeeAll,
+              child: Text(
+                'See All',
+                style: GoogleFonts.roboto(color: Colors.black),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -155,11 +197,18 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               children: [
-                Text(emptyMessage),
+                Text(emptyMessage, style: GoogleFonts.roboto()),
                 const SizedBox(height: 8),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkGreen,
+                    foregroundColor: AppColors.textLight,
+                  ),
                   onPressed: onEmptyButtonPressed,
-                  child: Text(emptyButtonLabel),
+                  child: Text(
+                    emptyButtonLabel,
+                    style: GoogleFonts.roboto(color: AppColors.textLight),
+                  ),
                 ),
               ],
             ),

@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./src/routes/auth");
 
 const app = express();
 
@@ -24,11 +24,10 @@ app.use("/api", apiRouter);
 
 // Mount auth routes to API router
 apiRouter.use("/auth", authRoutes);
-app.use("/api", apiRouter);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("MongoDB connected");
 
