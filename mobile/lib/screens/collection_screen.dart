@@ -14,7 +14,11 @@ import 'add_game_screen.dart';
 const int _pageSize = 10;
 
 class CollectionScreen extends StatefulWidget {
-  const CollectionScreen({super.key});
+  // Lets the Lists tab reuse this screen pre-filtered to one list
+  final CollectionFilters? initialFilters;
+  final String? title;
+
+  const CollectionScreen({super.key, this.initialFilters, this.title});
 
   @override
   State<CollectionScreen> createState() => _CollectionScreenState();
@@ -38,6 +42,9 @@ class _CollectionScreenState extends State<CollectionScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialFilters != null) {
+      _filters = widget.initialFilters!;
+    }
     _scrollController.addListener(_onScroll);
     _loadCollection();
   }
@@ -198,7 +205,11 @@ class _CollectionScreenState extends State<CollectionScreen> {
   Future<void> _openSortSheet() async {
     final result = await showModalBottomSheet<CollectionSortOption>(
       context: context,
-      builder: (context) => SortBottomSheet(selected: _sortOption),
+      builder: (context) => SortBottomSheet<CollectionSortOption>(
+        selected: _sortOption,
+        options: CollectionSortOption.values,
+        labelBuilder: (option) => option.label,
+      ),
     );
     if (result != null) {
       setState(() {
@@ -253,7 +264,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Collection'),
+        title: Text(widget.title ?? 'Collection'),
         actions: [
           IconButton(icon: const Icon(Icons.add), onPressed: _openAddGame),
         ],
