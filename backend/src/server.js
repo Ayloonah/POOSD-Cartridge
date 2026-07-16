@@ -1,10 +1,15 @@
-require("dotenv").config();
+const path = require("path");
+
+require("dotenv").config({
+    path: path.resolve(__dirname, "../.env")
+});
 
 const express = require("express");
 const mongoose = require("mongoose");
 
-const authRoutes = require("./src/routes/auth");
-const listRoutes = require("./src/routes/listRoutes");
+const authRoutes = require("./routes/auth");
+const listRoutes = require("./routes/listRoutes");
+const gameRoutes = require("./routes/gameRoutes");
 
 const app = express();
 
@@ -26,6 +31,7 @@ apiRouter.get("/health", (req, res) => {
 // Mount auth routes to API router
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/lists", listRoutes)
+apiRouter.use("/games", gameRoutes);
 app.use("/api", apiRouter);
 // Connect to MongoDB
 mongoose
@@ -42,3 +48,5 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error:", err);
   });
+
+
