@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:mobile/screens/email_verif_screen.dart';
-import 'package:mobile/screens/forgot_pw_screen.dart';
-import 'package:mobile/screens/home_screen.dart';
-import 'package:mobile/screens/main_nav_screen.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
 import 'screens/auth_gate.dart';
