@@ -15,7 +15,7 @@ const getUserLists = async (req, res) => {
     try {
         const lists = await List.find({
             userId: req.params.userId
-        }).sort({
+        }).populate("games").sort({
             updatedAt: -1
         });
 
