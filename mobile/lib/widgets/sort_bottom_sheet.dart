@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import '../models/collection_sort_option.dart';
 
-// Bottom sheet for picking how the collection grid is sorted.
+// Bottom sheet for picking a sort option from a fixed list.
 // Pops with the chosen option, or null if dismissed without a choice.
-class SortBottomSheet extends StatelessWidget {
-  final CollectionSortOption selected;
+class SortBottomSheet<T> extends StatelessWidget {
+  final T selected;
+  final List<T> options;
+  final String Function(T) labelBuilder;
 
-  const SortBottomSheet({super.key, required this.selected});
+  const SortBottomSheet({
+    super.key,
+    required this.selected,
+    required this.options,
+    required this.labelBuilder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +27,9 @@ class SortBottomSheet extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          for (final option in CollectionSortOption.values)
-            RadioListTile<CollectionSortOption>(
-              title: Text(option.label),
+          for (final option in options)
+            RadioListTile<T>(
+              title: Text(labelBuilder(option)),
               value: option,
               groupValue: selected,
               onChanged: (value) => Navigator.pop(context, value),
