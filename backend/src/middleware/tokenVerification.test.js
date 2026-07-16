@@ -19,7 +19,7 @@ describe('Java Web Token Verification Middleware', () => {
         const payload = { userId: '12345', role: 'user' }; 
         const validToken = jwt.sign(payload,process.env.JWT_SECRET); // Test token signed with test secret
 
-        req.headers['authorization'] = 'Bearer ${validToken}'; // Simulate sending "Bearer <token>" in authorization header
+        req.headers['authorization'] = `Bearer ${validToken}`; // Simulate sending "Bearer <token>" in authorization header
 
         authenticateToken(req, res, next);
 
