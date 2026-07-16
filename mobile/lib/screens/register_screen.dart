@@ -196,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.post('/register', {
+      final response = await apiService.post('/auth/register', {
         'email': _emailController.text,
         'username': _usernameController.text,
         'password': _passwordController.text,
@@ -207,12 +207,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       // If response from API is good
       if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
+            // Backend's response doesn't echo the username back, so use what was typed
             builder: (context) => VerifyEmailScreen(
-              username: data['username'],
+              username: _usernameController.text,
               email: _emailController.text,
             ),
           ),
@@ -221,6 +221,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final data = jsonDecode(response.body);
         setState(() {
           _errorMessage =
+              data['message'] ??
               data['error'] ??
               'Registration failed. Please check your information and try again.';
         });
