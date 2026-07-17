@@ -9,6 +9,7 @@ const { verifyPassword } = require('../utils/hash');
 
 const { sendVerificationEmail } = require('../utils/email');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { availableMemory } = require('process');
 
 exports.login = async (req, res) => {
     try {
@@ -240,7 +241,7 @@ exports.me = async (req, res) => {
         const userId = req.user?.userId;
 
         if (!userId) {
-            return res.status(400).json( {message: "Verfication token is missing." })
+            return res.status(400).json({ message: "Verfication token is missing." })
         }
 
         const user = await User.findById(userId).select('profilePicture username bio email');
@@ -259,5 +260,41 @@ exports.me = async (req, res) => {
     } catch(err) {
         console.error("CRITICAL EXCEPTION")
         res.status(500).json({error: 'Could not fetch user information'});
+    }
+}
+
+exports.checkUsername = async (req, res) => {
+    try {
+        const { username } = req.query;
+
+        const currentUserId = req.user?.userId;
+
+        if (!username || username.trim() === "") {
+            return res.status(400).json({ message: "Please enter a valid username"});
+        }
+        
+        const existingUser = await User.findOne({ username: { $regex: `^${username.trim()}$`, $options: 'i' }
+        }); 
+
+        if (existingUser) {
+            if (currentUserId && existingUser._id.toString() === currentUserId) {
+                return res.status(400).json({ 
+                    available: true
+                });
+            }
+            return res.status(200).json({
+                available: false, 
+                message: "Username already taken. Please try another username."
+            })
+        }
+
+        return res.status(200).json({ 
+            available: true,
+            message: "Username Available!"
+        });
+        
+    } catch {
+        console.error("CRITICAL EXCEPTION")
+        res.status(500).json({error: 'Operation terminated!' });
     }
 }
