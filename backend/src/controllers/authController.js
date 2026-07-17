@@ -1,4 +1,6 @@
 const User = require ('../models/users');
+const mongoose = require('mongoose');
+
 const JWT = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -230,5 +232,32 @@ exports.verifyEmail = async (req, res) => {
     } catch(err) {
         console.error("CRITICAL EXCEPTION", err);
         res.status(500).json({error: 'Server-side error'});
+    }
+}
+
+exports.me = async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(400).json( {message: "Verfication token is missing." })
+        }
+
+        const user = await User.findById(userId).select('profilePicture username bio email');
+
+        if (!user) {
+            return res.status(404).json({ message: "User NOT Found!"})
+        }
+
+        return res.status(200).json ({
+            profilePicture: user.profilePicture,
+            username: user.username,
+            bio: user.bio,
+            email: user.email
+        })
+
+    } catch(err) {
+        console.error("CRITICAL EXCEPTION")
+        res.status(500).json({error: 'Could not fetch user information'});
     }
 }
