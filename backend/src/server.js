@@ -1,13 +1,13 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-
-const authRoutes = require("./routes/auth");
-const listRoutes = require("./routes/listRoutes");
-const gameRoutes = require("./routes/gameRoutes");
+const cors = require("cors");
+const authRoutes = require("./src/routes/auth");
+const listRoutes = require("./src/routes/listRoutes");
+const gameRoutes = require("./src/routes/gameRoutes");
 
 const app = express();
-
+app.use(cors());
 // Allows your backend to read JSON request bodies
 app.use(express.json());
 
