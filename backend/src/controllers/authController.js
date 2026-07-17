@@ -1,4 +1,6 @@
 const User = require ('../models/users');
+const mongoose = require('mongoose');
+
 const JWT = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -7,6 +9,7 @@ const { verifyPassword } = require('../utils/hash');
 
 const { sendVerificationEmail } = require('../utils/email');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { availableMemory } = require('process');
 
 exports.login = async (req, res) => {
     try {
@@ -151,7 +154,7 @@ exports.forgotPassword = async(req, res) => {
 
         await sendPasswordResetEmail(user.email, token);
 
-        console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
+        //console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
 
         return res.status(201).json({
             success: true, 
@@ -178,7 +181,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         if (newPassword !== confirmNewPassword) {
-            return res.status({ message: 'Password do NOT match! Please try again.' })
+            return res.status(400).json({ message: 'Password do NOT match! Please try again.' })
         }
 
         const user = await User.findOne({
@@ -230,5 +233,94 @@ exports.verifyEmail = async (req, res) => {
     } catch(err) {
         console.error("CRITICAL EXCEPTION", err);
         res.status(500).json({error: 'Server-side error'});
+    }
+}
+
+exports.me = async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(400).json({ message: "Verfication token is missing." })
+        }
+
+        const user = await User.findById(userId).select('profilePicture username bio email');
+
+        if (!user) {
+            return res.status(404).json({ message: "User NOT Found!"})
+        }
+
+        return res.status(200).json ({
+            profilePicture: user.profilePicture,
+            username: user.username,
+            bio: user.bio,
+            email: user.email
+        })
+
+    } catch(err) {
+        console.error("CRITICAL EXCEPTION")
+        res.status(500).json({error: 'Could not fetch user information'});
+    }
+}
+
+exports.checkUsername = async (req, res) => {
+    try {
+        const { username } = req.query;
+
+        const currentUserId = req.user?.userId;
+
+        if (!username || username.trim() === "") {
+            return res.status(400).json({ message: "Please enter a valid username"});
+        }
+        
+        const existingUser = await User.findOne({ username: { $regex: `^${username.trim()}$`, $options: 'i' }
+        }); 
+
+        if (existingUser) {
+            if (currentUserId && existingUser._id.toString() === currentUserId) {
+                return res.status(400).json({ 
+                    available: true
+                });
+            }
+            return res.status(200).json({
+                available: false, 
+                message: "Username already taken. Please try another username."
+            })
+        }
+
+        return res.status(200).json({ 
+            available: true,
+            message: "Username Available!"
+        });
+
+    } catch {
+        console.error("CRITICAL EXCEPTION")
+        res.status(500).json({error: 'Operation terminated!' });
+    }
+}
+
+exports.profile = async (req, res) => {
+    try {
+        
+        const { newProfilePicture, newBio } = req.body;
+
+        const userId = req.user._id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, 
+            {
+                profilePicture: newProfilePicture,
+                bio: newBio
+            },
+            { new: true, runValidators:true } // Returns updated document
+        );
+
+        return res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch(error) {
+        console.error("Profile update error:", error);
+        return res.status(500).json({ message: "Something went wrong trying to update your profile"})
     }
 }
