@@ -154,7 +154,7 @@ exports.forgotPassword = async(req, res) => {
 
         await sendPasswordResetEmail(user.email, token);
 
-        console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
+        //console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
 
         return res.status(201).json({
             success: true, 
@@ -181,7 +181,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         if (newPassword !== confirmNewPassword) {
-            return res.status({ message: 'Password do NOT match! Please try again.' })
+            return res.status(400).json({ message: 'Password do NOT match! Please try again.' })
         }
 
         const user = await User.findOne({
@@ -292,9 +292,35 @@ exports.checkUsername = async (req, res) => {
             available: true,
             message: "Username Available!"
         });
-        
+
     } catch {
         console.error("CRITICAL EXCEPTION")
         res.status(500).json({error: 'Operation terminated!' });
+    }
+}
+
+exports.profile = async (req, res) => {
+    try {
+        
+        const { newProfilePicture, newBio } = req.body;
+
+        const userId = req.user._id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId, 
+            {
+                profilePicture: newProfilePicture,
+                bio: newBio
+            },
+            { new: true, runValidators:true } // Returns updated document
+        );
+
+        return res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+    } catch(error) {
+        console.error("Profile update error:", error);
+        return res.status(500).json({ message: "Something went wrong trying to update your profile"})
     }
 }
