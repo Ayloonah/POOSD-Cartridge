@@ -1,0 +1,5 @@
+# Flutter-generated files should always keep LF line endings, so
+# core.autocrlf doesn't make them show up as modified on Windows checkouts.
+mobile/**/generated_plugin_registrant.* text eol=lf
+mobile/**/generated_plugins.cmake text eol=lf
+mobile/**/GeneratedPluginRegistrant.swift text eol=lf
