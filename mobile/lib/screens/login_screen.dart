@@ -79,8 +79,19 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false,
         );
       } else {
+        // Surface the backend's own message (e.g. unverified-account notice
+        // on a 403) instead of a generic one, falling back if unparseable
+        String message = 'Invalid email or password';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) {
+            message = data['message'];
+          }
+        } catch (_) {
+          // Keep the generic message
+        }
         setState(() {
-          _errorMessage = 'Invalid email or password';
+          _errorMessage = message;
         });
       }
     } catch (e) {

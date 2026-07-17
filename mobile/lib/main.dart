@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
 import 'screens/auth_gate.dart';
 import 'screens/reset_pw_screen.dart';
+import 'screens/verify_email_confirm_screen.dart';
 
 void main() {
   // So web links look like /reset-password?token=... instead of /#/reset-password?token=...
@@ -34,6 +35,11 @@ class MyApp extends StatelessWidget {
         if (uri.path == '/reset-password') {
           return MaterialPageRoute(
             builder: (context) => const ResetPasswordScreen(),
+          );
+        }
+        if (uri.path == '/verify-email') {
+          return MaterialPageRoute(
+            builder: (context) => const VerifyEmailConfirmScreen(),
           );
         }
         //return MaterialPageRoute(builder: (context) => const AuthGate());
