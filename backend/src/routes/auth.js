@@ -15,6 +15,8 @@ router.post('/resetPassword', authController.resetPassword);
 router.get('/verifyEmail', authController.verifyEmail);
 router.get('/me', authenticateToken, authController.me);
 router.get('/checkUsername', authController.checkUsername);
-router.put('/profile', authController.profile); 
+router.put('/profile', authenticateToken, authController.profile); 
+router.put('/account', authenticateToken, authController.account); 
+router.delete('/account', authenticateToken, authController.deleteAccount);
 
 module.exports = router;
