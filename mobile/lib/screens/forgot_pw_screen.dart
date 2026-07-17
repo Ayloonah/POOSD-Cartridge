@@ -78,7 +78,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.post('/reset-password', {
+      final response = await apiService.post('/auth/forgotPassword', {
         'email': _emailController.text,
       });
 
@@ -86,7 +86,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       // Don't reveal whether the email is registered either way
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         setState(() {
           _submitted = true;
         });

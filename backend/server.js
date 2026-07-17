@@ -2,10 +2,14 @@ require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const authRoutes = require("./src/routes/auth");
 
 const app = express();
+
+// Allows the mobile web app (running on a different origin) to call this API
+app.use(cors());
 
 // Allows your backend to read JSON request bodies
 app.use(express.json());
