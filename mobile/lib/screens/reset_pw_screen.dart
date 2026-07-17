@@ -121,10 +121,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.post('/reset-password', {
-        'token': _token,
-        'password': _passwordController.text,
-      });
+      // Backend reads the token from the query string, not the body
+      final response = await apiService.post(
+        '/auth/resetPassword?token=${Uri.encodeQueryComponent(_token!)}',
+        {
+          'newPassword': _passwordController.text,
+          'confirmNewPassword': _passwordController.text,
+        },
+      );
 
       // If widget no longer on screen, leave
       if (!mounted) return;
