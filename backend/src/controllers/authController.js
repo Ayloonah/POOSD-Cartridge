@@ -222,13 +222,23 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ message: 'Invalid or expired verfication token' });
         }
 
-        user.isVerified = true;
+        const isEmailUpdate = !!user.pendingEmail;
+
+        if (isEmailUpdate) {
+            user.email = user.pendingEmail;
+            user.pendingEmail = null;
+        } else {
+            user.isVerified = true;
+        }
 
         user.verificationToken = undefined;
 
         await user.save();
 
-        return res.status(200).json({ message: 'Email verified! Welcome to CARTRIDGE. You may now sign in!' });
+        return res.status(200).json({ 
+            message: isEmailUpdate
+            ? 'Your email address has been successfully updated!'
+            : 'Email verified! Welcome to CARTRIDGE. You may now sign in!' });
    
     } catch(err) {
         console.error("CRITICAL EXCEPTION", err);
@@ -304,7 +314,7 @@ exports.profile = async (req, res) => {
         
         const { newProfilePicture, newBio } = req.body;
 
-        const userId = req.user._id;
+        const userId = req.user?.id || req.user?._id || req.user?.userId;
 
         const updatedUser = await User.findByIdAndUpdate(
             userId, 
@@ -312,8 +322,8 @@ exports.profile = async (req, res) => {
                 profilePicture: newProfilePicture,
                 bio: newBio
             },
-            { new: true, runValidators:true } // Returns updated document
-        );
+            { returnDocument: 'after', runValidators:true } // Returns updated document
+        ).select('profilePicture bio');
 
         return res.status(200).json({
             message: "Profile updated successfully",
@@ -321,6 +331,114 @@ exports.profile = async (req, res) => {
         });
     } catch(error) {
         console.error("Profile update error:", error);
-        return res.status(500).json({ message: "Something went wrong trying to update your profile"})
+        return res.status(500).json({ 
+            message: "Something went wrong trying to update your profile",
+            debugError: error.message
+        });
     }
 }
+
+exports.account = async (req, res) => {
+    try {
+        
+        const userId = req.user?.id || req.user?._id || req.user?.userId;
+
+        const { newUsername, newEmail, newPassword } = req.body;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found"});
+        }
+
+        if (newUsername && newUsername.trim() !== "" && newUsername !== user.username) {
+            const usernameExists = await User.findOne({
+                username: { $regex: `^${newUsername.trim()}$`, $options: 'i'}
+            });
+
+            if (usernameExists) {
+                return res.status(400).json({
+                    message: "Username already taken. Please try another username."
+                });
+            }
+            user.username = newUsername.trim();
+        }
+
+        if (newEmail && newEmail !== user.email) {
+            const emailExists = await User.findOne({ email: newEmail });
+            if (emailExists) return res.status(400).json({ message: "Account already exists with this Email"});
+            
+            user.pendingEmail = newEmail;
+            user.verificationToken = crypto.randomBytes(20).toString('hex');
+        }
+
+        if (newPassword) {
+            const { currentPassword } = req.body;
+
+            if (!currentPassword) {
+                return res.status(400).json({ message: "Current password is required to change your password." })
+            }
+
+            const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Incorrect current password. Action denied." });
+            }
+
+            user.passwordHash = await hashPassword(newPassword);
+        }
+
+        await user.save();
+
+        if (newEmail) {
+            try {
+                await sendVerificationEmail(user.pendingEmail, user.verificationToken);
+            } catch (emailError) {
+                console.error("Failed to send re-verification email:", emailError);
+            }
+        }
+
+        return res.status(200).json({
+            message: newEmail
+            ? "Account updated. Please check your new email to verify your account."
+            : "Account settings updated successfully",
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error("Account update error:", error);
+        return res.status(500).json({ message: "Internal server error updating account settings" });
+    }
+}
+
+exports.deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user?.id || req.user?._id || req.user?.userId;
+        const { currentPassword } = req.body;
+
+        if (!currentPassword) {
+            return res.status(400).json({ message: "Current password is required to delete your account." })
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Incorrect password. Permission to delete denied! "});
+        }
+
+        await User.findByIdAndDelete(userId);
+
+        return res.status(200).json({
+            message: "Your CARTRIDGE account has been permanently deleted. May the road lead you to warm sands."
+        });
+    } catch (error) {
+        console.error("Account deletion error:", error);
+        return res.status(500).json({ message: "Internal server error trying to delete account."})
+    }
+};
