@@ -1,0 +1,253 @@
+openapi: 3.0.0
+info:
+  description: This is the API documentation for the Lists endpoints of the Cartridge Web and Mobile Application.
+  version: 1.0.0
+  title: Cartridge - Lists
+  contact:
+    email: Julianbir123@gmail.com
+
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+tags:
+  - name: Lists
+    description: User-created game list management end points
+
+paths:
+  /lists:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Create a list for User
+      operationId: createList
+      description: Create a list for User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lists'
+      responses:
+        '201':
+          description: Lists Successfully Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lists'
+        '404':
+          description: URL Not Found
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Get all lists for a User
+      operationId: getList
+      description: Get all lists for a User
+      responses:
+        '200':
+          description: Lists Successfully Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lists'
+        '404':
+          description: URL Not Found
+
+  /lists/{listId}:
+    parameters:
+      - name: listId
+        in: path
+        required: true
+        schema:
+          type: integer
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Update list name
+      operationId: updateList
+      description: Update list name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - listName
+              properties:
+                listName:
+                  type: string
+                  example: "Completed"
+      responses:
+        '200':
+          description: Lists Successfully Renamed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lists'
+        '404':
+          description: URL Not Found
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Delete list from User
+      operationId: deleteListItem
+      description: Delete list from User
+      responses:
+        '200':
+          description: Lists Successfully deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                  username:
+                    type: string
+                  error:
+                    type: string
+        '404':
+          description: URL Not Found
+
+  /lists/{listId}/games:
+    post:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Add a game to a list
+      operationId: addGameToList
+      description: Add a game to a existing user list.
+      parameters:
+      - name: listId
+        in: path
+        required: true
+        description: ID of the list receiving the game
+        schema:
+          type: integer
+          example: 1234
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserGames'
+      responses:
+        '201':
+          description: Game Successfully Added to List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserGames'
+        '404':
+          description: URL Not Found
+  /lists/{listId}/games/{entryId}:
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Remove a game from a user's list
+      operationId: removeGameFromList
+      description: Remove a game from a user's list
+      parameters:
+        - name: listId
+          in: path
+          required: true
+          schema:
+            type: integer
+
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Game Successfully Removed from List
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  error:
+                    type: string
+        '404':
+          description: URL Not Found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Lists:
+      type: object
+      required:
+        - listName
+      properties:
+        userId:
+          type: integer
+          example: 123
+        listId:
+          type: integer
+          example: 1234
+        listName:
+          type: string
+          example: "played"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+
+    UserGames:
+      type: object
+      required:
+        - gameId
+      properties:
+        gameId:
+          type: integer
+          example: 1234
+        listId:
+          type: integer
+          example: 1234
+        played:
+          type: boolean
+        hoursPlayed:
+          type: integer
+          example: 36
+        rating:
+          type: integer
+          example: 5
+        review:
+          type: string
+          example: "This game is great!"
+        platformPlayed:
+          type: string
+          example: "Playstation"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-07-08T12:00:00Z"
+
+servers:
+  - url: http://www.cartridgeapp.fun
