@@ -156,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
       final response = await apiService.get(
-        '/auth/check-username?username=${Uri.encodeQueryComponent(candidate)}',
+        '/auth/checkUsername?username=${Uri.encodeQueryComponent(candidate)}',
         token: authState.token,
       );
 
