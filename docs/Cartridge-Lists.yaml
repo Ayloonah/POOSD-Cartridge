@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: This is the API documentation for the Lists endpoints of the Cartridge Web and Mobile Application.
+  description: API documentation for the Lists endpoints of the Cartridge Web and Mobile Application.
   version: 1.0.0
   title: Cartridge - Lists
   contact:
@@ -12,182 +12,120 @@ info:
 
 tags:
   - name: Lists
-    description: User-created game list management end points
+    description: User-created game list management endpoints
 
 paths:
-  /lists:
+  /api/lists:
     post:
       security:
         - bearerAuth: []
       tags:
         - Lists
-      summary: Create a list for User
+      summary: Create a list
       operationId: createList
-      description: Create a list for User
+      description: >
+        Creates the list and, in the same request, assigns it to every
+        game entry named in entryIds (adds this list's id to each of
+        those GameUserEntry documents' listIds array). entryIds may be
+        empty — a list can be created with no games in it.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Lists'
+              $ref: '#/components/schemas/ListInput'
       responses:
         '201':
-          description: Lists Successfully Created
+          description: List created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Lists'
-        '404':
-          description: URL Not Found
+                $ref: '#/components/schemas/List'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
     get:
       security:
         - bearerAuth: []
       tags:
         - Lists
-      summary: Get all lists for a User
-      operationId: getList
-      description: Get all lists for a User
+      summary: Get all lists for the logged-in user
+      operationId: getLists
       responses:
         '200':
-          description: Lists Successfully Created
+          description: Lists retrieved
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Lists'
-        '404':
-          description: URL Not Found
+                  $ref: '#/components/schemas/List'
 
-  /lists/{listId}:
+  /api/lists/{listId}:
     parameters:
       - name: listId
         in: path
         required: true
         schema:
-          type: integer
+          type: string
+
     put:
       security:
         - bearerAuth: []
       tags:
         - Lists
-      summary: Update list name
+      summary: Update a list's name, cover image, and game membership
       operationId: updateList
-      description: Update list name
+      description: >
+        Renames/re-covers the list and does a full resync of membership:
+        entryIds is treated as the complete membership list after this
+        request — this list's id is added to the listIds of any
+        newly-included entries, and removed from any previously-member
+        entries no longer present in entryIds.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - listName
-              properties:
-                listName:
-                  type: string
-                  example: "Completed"
+              $ref: '#/components/schemas/ListInput'
       responses:
         '200':
-          description: Lists Successfully Renamed
+          description: List updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Lists'
+                $ref: '#/components/schemas/List'
         '404':
-          description: URL Not Found
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
     delete:
       security:
         - bearerAuth: []
       tags:
         - Lists
-      summary: Delete list from User
-      operationId: deleteListItem
-      description: Delete list from User
+      summary: Delete a list
+      operationId: deleteList
+      description: Deletes the list, and removes its id from the listIds array of any GameUserEntry documents that referenced it. Games themselves aren't affected.
       responses:
         '200':
-          description: Lists Successfully deleted
+          description: List deleted
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  userId:
-                    type: integer
-                  username:
-                    type: string
-                  error:
-                    type: string
+                $ref: '#/components/schemas/MessageResponse'
         '404':
-          description: URL Not Found
-
-  /lists/{listId}/games:
-    post:
-      security:
-        - bearerAuth: []
-      tags:
-        - Lists
-      summary: Add a game to a list
-      operationId: addGameToList
-      description: Add a game to a existing user list.
-      parameters:
-      - name: listId
-        in: path
-        required: true
-        description: ID of the list receiving the game
-        schema:
-          type: integer
-          example: 1234
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserGames'
-      responses:
-        '201':
-          description: Game Successfully Added to List
+          description: List not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserGames'
-        '404':
-          description: URL Not Found
-  /lists/{listId}/games/{entryId}:
-    delete:
-      security:
-        - bearerAuth: []
-      tags:
-        - Lists
-      summary: Remove a game from a user's list
-      operationId: removeGameFromList
-      description: Remove a game from a user's list
-      parameters:
-        - name: listId
-          in: path
-          required: true
-          schema:
-            type: integer
-
-        - name: entryId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Game Successfully Removed from List
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  error:
-                    type: string
-        '404':
-          description: URL Not Found
+                $ref: '#/components/schemas/MessageResponse'
 
 components:
   securitySchemes:
@@ -196,58 +134,53 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    Lists:
+    List:
       type: object
-      required:
-        - listName
       properties:
+        listId:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0d1"
         userId:
-          type: integer
-          example: 123
-        listId:
-          type: integer
-          example: 1234
-        listName:
           type: string
-          example: "played"
+          example: "64f1a2b3c4d5e6f7a8b9c0d2"
+        name:
+          type: string
+          example: "Played"
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+          description: Defaults (client-side) to the cover of the first game added to the list.
         createdAt:
           type: string
           format: date-time
-          example: "2026-07-08T12:00:00Z"
-
-    UserGames:
-      type: object
-      required:
-        - gameId
-      properties:
-        gameId:
-          type: integer
-          example: 1234
-        listId:
-          type: integer
-          example: 1234
-        played:
-          type: boolean
-        hoursPlayed:
-          type: integer
-          example: 36
-        rating:
-          type: integer
-          example: 5
-        review:
-          type: string
-          example: "This game is great!"
-        platformPlayed:
-          type: string
-          example: "Playstation"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2026-07-08T12:00:00Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2026-07-08T12:00:00Z"
+
+    ListInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Played"
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+        entryIds:
+          type: array
+          description: The complete set of GameUserEntry ids that should belong to this list after this request. Optional — omit or send an empty array for a list with no games.
+          items:
+            type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
 
 servers:
   - url: http://www.cartridgeapp.fun

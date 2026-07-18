@@ -28,7 +28,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
     super.dispose();
   }
 
-  // Searches cached games first, then RAWG, per the backend's /games/search contract
+  // Searches RAWG via the backend's /games/search
   Future<void> _search() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
@@ -43,16 +43,19 @@ class _AddGameScreenState extends State<AddGameScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
       final response = await apiService.get(
-        '/games/search?q=${Uri.encodeQueryComponent(query)}',
+        '/games/search?search=${Uri.encodeQueryComponent(query)}',
         token: token,
       );
 
       if (!mounted) return;
 
       setState(() {
-        _results = response.statusCode == 200
-            ? List<Map<String, dynamic>>.from(jsonDecode(response.body))
-            : [];
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          _results = List<Map<String, dynamic>>.from(data['results'] ?? []);
+        } else {
+          _results = [];
+        }
       });
     } catch (e) {
       if (mounted) {
@@ -70,7 +73,8 @@ class _AddGameScreenState extends State<AddGameScreen> {
     }
   }
 
-  // A result is either already cached (has gameId) or from RAWG only (has rawgId)
+  // Search results only ever have rawgId right now (backend doesn't check
+  // the cache before hitting RAWG) — gameId would only appear if that changes
   Future<void> _selectResult(Map<String, dynamic> game) async {
     final platforms = (game['platforms'] as List?)?.map((p) => p.toString()).toList() ?? [];
     final saved = await Navigator.push<bool>(
