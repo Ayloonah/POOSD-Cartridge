@@ -6,6 +6,7 @@ const crypto = require('crypto');
 
 const { hashPassword } = require('../utils/hash');
 const { verifyPassword } = require('../utils/hash');
+const { matchesOldPassword } = require('../utils/hash');
 
 const { sendVerificationEmail } = require('../utils/email');
 const { sendPasswordResetEmail } = require('../utils/email');
@@ -29,7 +30,7 @@ exports.login = async (req, res) => {
         // Check user submitted password to hash password
         const isMatch = await verifyPassword(password, user.passwordHash);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Email/Password invalid' });
+            return res.status(400).json({ message: 'Email/Password incorrect' });
         }
 
         if (user.isVerified === false) {
@@ -40,6 +41,8 @@ exports.login = async (req, res) => {
                 await user.save();
 
                 await sendVerificationEmail(user.email, newVerificationToken);
+
+                console.log(`http://localhost:5000/api/auth/verifyEmail?token=${newVerificationToken}`);
 
                 return res.status(403).json({
                     success: false,
@@ -94,17 +97,28 @@ exports.logout = async(req, res) => {
 
 exports.register = async(req, res) => {
     try {
-        const { username, password, email } = req.body
+        const { username, email, password, confirmPassword } = req.body
 
         // Validate user inputs
-        if (!username || !password || !email) {
+        if (!username || !password || !email || !confirmPassword) {
             return res.status(400).json ({ message: 'Please fill out all fields' });
         }
 
+        const usernameExist = await User.findOne({ username: { $regex: `^${username.trim()}$`, $options: 'i'} 
+        });
+
+        if (usernameExist) {
+            return res.status(400).json({ message: "Username already taken! Please try again." })
+        }
+
         // Check database to ensure user is NOT in database already with the email.
-        const user = await User.findOne({ email: email.toLowerCase() });
-        if (user) {
+        const emailExists = await User.findOne({ email: email.toLowerCase() });
+        if (emailExists) {
             return res.status(400).json({ message: 'Account already exists. Please sign in.' });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json ({ message: 'Passwords do NOT match' });
         }
 
         const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -120,7 +134,13 @@ exports.register = async(req, res) => {
             isVerified: false
         });
         await sendVerificationEmail(newUser.email, verificationToken);
-        res.status(201).json({message: 'Account added to DB.'})
+        
+        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${verificationToken}`);
+        
+        res.status(201).json({
+            message: 'Account added to DB.',
+            email: newUser.email
+        });
 
     } catch (err) {
         console.error("CRITICAL EXCEPTION", err);
@@ -154,7 +174,7 @@ exports.forgotPassword = async(req, res) => {
 
         await sendPasswordResetEmail(user.email, token);
 
-        //console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
+        console.log(`👉 http://localhost:5000/api/auth/resetPassword?token=${token}`);
 
         return res.status(201).json({
             success: true, 
@@ -181,7 +201,7 @@ exports.resetPassword = async (req, res) => {
         }
 
         if (newPassword !== confirmNewPassword) {
-            return res.status(400).json({ message: 'Password do NOT match! Please try again.' })
+            return res.status(400).json({ message: 'Passwords do NOT match! Please try again.' })
         }
 
         const user = await User.findOne({
@@ -191,6 +211,11 @@ exports.resetPassword = async (req, res) => {
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired reset token.' })
+        }
+
+        const newMatchesOld = await matchesOldPassword (newPassword, user.passwordHash);
+        if (newMatchesOld) {
+            return res.status(400).json({ message: 'Your new password CANNOT match your previous password.' });
         }
 
         const securePassword = await hashPassword(newPassword);
@@ -216,7 +241,7 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ message: 'Verfication token is missing.' });
         }
 
-        const user = await User.findOne({ verificationToken: token});
+        const user = await User.findOne({ verificationToken: token });
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired verfication token' });
@@ -245,6 +270,42 @@ exports.verifyEmail = async (req, res) => {
         res.status(500).json({error: 'Server-side error'});
     }
 }
+
+exports.resendEmailVerification = async(req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email || email.trim() === "") {
+            return res.status(400).json ({ message: "Something went wrong. Can NOT find account registration!" });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        
+        // json return is affirmative for security concerns
+        if (!user) {
+            return res.status(404).json({ message: "Email verification link sent." })
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ message: "Account already verified. Please LOG IN." })
+        }
+        
+        const newVerificationToken = crypto.randomBytes(32).toString('hex');
+        user.verificationToken = newVerificationToken;
+        await user.save();
+
+        await sendVerificationEmail(user.email, newVerificationToken);
+
+        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${verificationToken}`);
+
+        return res.status(200).json({
+            message: "A new verification link has been sent to your inbox!"
+        });
+    } catch (error) {
+        console.error("Resend verification error;", error);
+        return res.status(500).json({ message: "Server-side error trying to resend email" });
+    }
+};
 
 exports.me = async (req, res) => {
     try {
@@ -374,6 +435,8 @@ exports.account = async (req, res) => {
 
         if (newPassword) {
             const { currentPassword } = req.body;
+            const { newPassword } = req.body;
+            const { confirmNewPassword } = req.body;
 
             if (!currentPassword) {
                 return res.status(400).json({ message: "Current password is required to change your password." })
