@@ -18,5 +18,6 @@ router.get('/checkUsername', authController.checkUsername);
 router.put('/profile', authenticateToken, authController.profile); 
 router.put('/account', authenticateToken, authController.account); 
 router.delete('/account', authenticateToken, authController.deleteAccount);
+router.post('/resendEmailVerification', authController.resendEmailVerification);
 
 module.exports = router;
