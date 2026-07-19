@@ -15,6 +15,10 @@ const formatGame = (rawgGame) => {
                 (item) => item.platform.name
             ) || [],
         releaseDate: rawgGame.released || null,
+        developers:
+    rawgGame.developers?.map(
+        (developer) => developer.name
+    ) || [],
         description:
             rawgGame.description_raw ||
             rawgGame.description ||
