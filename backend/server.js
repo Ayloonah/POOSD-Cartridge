@@ -5,7 +5,7 @@ const cors = require("cors");
 const authRoutes = require("./src/routes/auth");
 const listRoutes = require("./src/routes/listRoutes");
 const gameRoutes = require("./src/routes/gameRoutes");
-
+const userGameEntryRoutes = require("./routes/userGameEntryRoutes");
 const app = express();
 app.use(cors());
 // Allows your backend to read JSON request bodies
@@ -27,6 +27,7 @@ apiRouter.get("/health", (req, res) => {
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/lists", listRoutes)
 apiRouter.use("/games", gameRoutes);
+apiRouter.use("user-game-entries", userGameEntryRoutes);
 app.use("/api", apiRouter);
 // Connect to MongoDB
 mongoose
