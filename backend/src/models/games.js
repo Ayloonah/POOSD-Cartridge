@@ -25,7 +25,7 @@ const gameSchema = new mongoose.Schema({
         type: Date
     },
     developers: {
-        type: [string],
+        type: [String],
         default: []
     },
     description:{
