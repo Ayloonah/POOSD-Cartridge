@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const List = require("../models/list");
 const Game = require("../models/games");
-const GameUserEntry = require("../models/gameUserEntries");
+const GameUserEntry = require("../models/gameUserEntry");
 const validIds = (...ids) => {
     return ids.every((id)=>
     mongoose.Types.ObjectId.isValid(id)

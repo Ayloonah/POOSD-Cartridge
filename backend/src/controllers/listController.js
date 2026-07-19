@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 const List = require("../models/list");
-
-
 const createList = async (req, res) => {
     try {
         const userId = req.user.userId;
