@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const tokenVerification = require("../middleware/tokenVerification");
+const {authenticateToken} = require("../middleware/tokenVerification");
 
 const{
     createList,
@@ -8,7 +8,7 @@ const{
     deleteList,
     updateListName
 } = require("../controllers/listController");
-router.use(tokenVerification);
+router.use(authenticateToken);
 router.post("/", createList);
 router.get("/", getUserLists);
 router.delete("/:listId", deleteList);

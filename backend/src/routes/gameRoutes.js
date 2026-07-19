@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const tokenVerification = require(
+const {authenticateToken} = require(
     "../middleware/tokenVerification"
 );
 const{
@@ -12,6 +12,6 @@ const{
 
 router.get("/search", searchGames);
 router.get("/rawg/:rawgId", getGameByRawgId);
-router.post("/rawg/:rawgId", tokenVerification, saveGame);
+router.post("/rawg/:rawgId", authenticateToken, saveGame);
 router.get("/:gameId", getSavedGame);
 module.exports = router;

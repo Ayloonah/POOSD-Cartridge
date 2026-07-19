@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const tokenVerification = require(
+const {authenticateToken} = require(
     "../middleware/tokenVerification"
 );
 const {
@@ -10,9 +10,9 @@ const {
     getUserCollection,
     getGameEntry,
     updateGameEntry
-} = require("../controllers/userGameEntryController");
+} = require("../controllers/gameUserEntryController");
 // Every route below this line requires a valid JWT
-router.use(tokenVerification);
+router.use(authenticateToken);
 
 // Get the authenticated user's entire game collection
 router.get(
