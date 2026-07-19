@@ -8,15 +8,18 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
  * @param {string} to - The user's target email address
  * @param {string} token - The unique verification token
  */
+
 const sendVerificationEmail = async (userEmail, token) => {
     const verifiedSender = 'no-reply@cartridgeapp.fun'; 
     
+    const verificationLink = `${process.env.APP_BASE_URL}/verify-email?token=${token}`;
+
     const msg = {
         to: userEmail,
         from: verifiedSender, 
         subject: 'Verify your CARTRIDGE Account',
-        text: `Welcome to CARTRIDGE! Verify your email here: http://localhost:5000/api/verify-email?token=${token}`,
-        html: `<strong>Welcome to CARTRIDGE!</strong><br><br><a href="http://localhost:5000/api/verify-email?token=${token}">Click here to verify your account</a>`,
+        text: `Welcome to CARTRIDGE! Verify your email here: ${verificationLink}`,
+        html: `<strong>Welcome to CARTRIDGE!</strong><br><br><a href="${verificationLink}">Click here to verify your account</a>`,
     };
 
     try {
@@ -28,13 +31,11 @@ const sendVerificationEmail = async (userEmail, token) => {
     }
 };
 
-module.exports = { sendVerificationEmail };
-
 // Function that handles password resets
 const sendPasswordResetEmail = async (userEmail, token) => {
     const verifiedSender = 'no-reply@cartridgeapp.fun'; 
 
-    const resetLink = `${process.env.APP_BASE_URL}/api/auth/resetPassword?token=${token}`;
+    const resetLink = `${process.env.APP_BASE_URL}/reset-password?token=${token}`;
     
     const msg = {
         to: userEmail,

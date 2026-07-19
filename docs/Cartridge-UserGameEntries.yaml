@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: This is the API documentation for the User Game Entries endpoints of the Cartridge Web and Mobile Application.
+  description: API documentation for the User Game Entries (Collection) endpoints of the Cartridge Web and Mobile Application.
   version: 1.0.0
   title: Cartridge - User Game Entries
   contact:
@@ -12,100 +12,130 @@ info:
 
 tags:
   - name: User Game Entries
-    description: Game entries owned by users
+    description: Game collection entries owned by users
 
 paths:
-  /user-games:
+  /api/gameuserentries:
     get:
       security:
         - bearerAuth: []
       tags:
         - User Game Entries
-      summary: Get all game Entries for a User
-      operationId: getAllUserGame
-      description: Get all game Entries for a User
+      summary: Get all game entries for the logged-in user
+      operationId: getAllUserGameEntries
+      description: >
+        Returns the user's full collection, with each entry's referenced
+        game populated in (name, coverImage, genres, releaseDate,
+        developer). Clients sort, filter, and paginate this list
+        themselves, so no query params are needed.
       responses:
         '200':
-          description: Retrieved All Game Entries Successfully
+          description: Retrieved all game entries
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserGames'
+                  $ref: '#/components/schemas/GameUserEntry'
 
-        '404':
-          description: URL Not Found
-
-  /user-games/{entryId}:
-    parameters:
-    - name: entryId
-      in: path
-      required: true
-      schema:
-        type: integer
-    get:
+    post:
       security:
         - bearerAuth: []
       tags:
         - User Game Entries
-      summary: Get single game Entry for a User
-      operationId: getUserGame
-      description: Get single game Entry for a User
-      responses:
-        '200':
-          description:  Retrieved Game Entry Successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserGames'
-        '404':
-          description: URL Not Found
-    put:
-      security:
-        - bearerAuth: []
-      tags:
-        - User Game Entries
-      summary: Update single game Entry for a User
-      operationId: updateUserGame
-      description: Update single game Entry for a User
+      summary: Add a game to the user's collection
+      operationId: createUserGameEntry
+      description: >
+        Exactly one of gameId, rawgId, or newGame identifies the game:
+        gameId for a game already cached, rawgId for a game found via RAWG
+        search but not yet cached (cached automatically as part of this
+        request), or newGame for manually entering a game not found in
+        either source.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserGames'
+              $ref: '#/components/schemas/CreateGameUserEntry'
       responses:
-        '200':
-          description:  Updated Game Entry Successfully
+        '201':
+          description: Game entry created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserGames'
-        '404':
-          description: Game entry NOT Found
-    delete:
-      security:
-        - bearerAuth: []
-      tags:
-        - User Game Entries
-      summary: Delete single game Entry for a User
-      operationId: deleteUserGame
-      description: Delete single game Entry for a User
-      responses:
-        '200':
-          description:  Deleted Game Entry Successfully
+                $ref: '#/components/schemas/GameUserEntry'
+        '400':
+          description: Bad request
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
                   error:
                     type: string
+
+  /api/gameuserentries/{entryId}:
+    parameters:
+      - name: entryId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Get a single game entry
+      operationId: getUserGameEntry
+      responses:
+        '200':
+          description: Retrieved game entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameUserEntry'
         '404':
-          description: Could NOT delete game
+          description: Game entry not found
+
+    put:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Update a game entry
+      operationId: updateUserGameEntry
+      description: listIds is treated as the complete membership list — full resync, not additive (same convention as the Lists endpoints).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameUserEntryInput'
+      responses:
+        '200':
+          description: Updated game entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameUserEntry'
+        '404':
+          description: Game entry not found
+
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - User Game Entries
+      summary: Delete a game entry
+      operationId: deleteUserGameEntry
+      description: Removes the game from the user's collection entirely (all lists it belonged to).
+      responses:
+        '200':
+          description: Deleted game entry
+        '404':
+          description: Game entry not found
 
 components:
   securitySchemes:
@@ -114,39 +144,115 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    UserGames:
+    GameUserEntry:
       type: object
-      required:
-        - gameId
+      description: A collection entry, with the referenced game's details populated in.
       properties:
-        gameId:
-          type: integer
-          example: 1234
-        listId:
-          type: integer
-          example: 1234
-        played:
-          type: boolean
-        hoursPlayed:
-          type: integer
-          example: 36
-        rating:
-          type: integer
-          example: 5
-        review:
+        entryId:
           type: string
-          example: "This game is great!"
+          example: "64f1a2b3c4d5e6f7a8b9c0d3"
+        gameId:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0e1"
+        name:
+          type: string
+          example: "Skyrim"
+        coverImage:
+          type: string
+          format: uri
+        genres:
+          type: array
+          items:
+            type: string
+        releaseDate:
+          type: string
+          format: date
+        developer:
+          type: string
         platformPlayed:
           type: string
-          example: "Playstation"
+        hoursPlayed:
+          type: number
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+        review:
+          type: string
+        played:
+          type: boolean
+        listIds:
+          type: array
+          description: Ids of every list this entry currently belongs to.
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time
-          example: "2026-07-08T12:00:00Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2026-07-08T12:00:00Z"
+
+    GameUserEntryInput:
+      type: object
+      description: Editable fields for an existing entry. Also embedded inside CreateGameUserEntry.
+      properties:
+        played:
+          type: boolean
+        hoursPlayed:
+          type: number
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+          nullable: true
+        review:
+          type: string
+        platformPlayed:
+          type: string
+        listIds:
+          type: array
+          items:
+            type: string
+
+    CreateGameUserEntry:
+      allOf:
+        - $ref: '#/components/schemas/GameUserEntryInput'
+        - type: object
+          properties:
+            gameId:
+              type: string
+            rawgId:
+              type: integer
+            newGame:
+              $ref: '#/components/schemas/NewGameInput'
+
+    NewGameInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+        genres:
+          type: array
+          items:
+            type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        releaseDate:
+          type: string
+          format: date
+          nullable: true
+        developer:
+          type: string
+          nullable: true
 
 servers:
   - url: http://www.cartridgeapp.fun
