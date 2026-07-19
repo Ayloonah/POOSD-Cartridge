@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const List = require("../models/list");
-const mongoose = require("mongoose");
-const List = require("../models/list");
+
 
 const createList = async (req, res) => {
     try {
