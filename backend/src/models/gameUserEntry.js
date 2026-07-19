@@ -1,5 +1,5 @@
 const mongoose = require ("mongoose");
-const gameUserSchema = new mongoose.Schema({
+const gameUserEntrySchema = new mongoose.Schema({
     userId:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -43,4 +43,13 @@ const gameUserSchema = new mongoose.Schema({
         timestamps: true
     }
 );
-module.exports = mongoose.model("GameUserEntry", gameUserSchema);
+gameUserEntrySchema.index(
+    {
+        userId: 1,
+        gameId: 1
+    },
+    {
+        unique: true
+    }
+);
+module.exports = mongoose.model("GameUserEntry", gameUserEntrySchema);
