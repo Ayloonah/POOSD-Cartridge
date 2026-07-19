@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:mobile/screens/email_verif_screen.dart';
-import 'package:mobile/screens/forgot_pw_screen.dart';
-import 'package:mobile/screens/home_screen.dart';
-import 'package:mobile/screens/main_nav_screen.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
 import 'screens/auth_gate.dart';
 import 'screens/reset_pw_screen.dart';
+import 'screens/verify_email_confirm_screen.dart';
 
 void main() {
   // So web links look like /reset-password?token=... instead of /#/reset-password?token=...
@@ -38,6 +35,11 @@ class MyApp extends StatelessWidget {
         if (uri.path == '/reset-password') {
           return MaterialPageRoute(
             builder: (context) => const ResetPasswordScreen(),
+          );
+        }
+        if (uri.path == '/verify-email') {
+          return MaterialPageRoute(
+            builder: (context) => const VerifyEmailConfirmScreen(),
           );
         }
         //return MaterialPageRoute(builder: (context) => const AuthGate());

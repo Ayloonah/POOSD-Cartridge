@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: This is the API documentation for the Games endpoints of the Cartridge Web and Mobile Application.
+  description: API documentation for the Games endpoints of the Cartridge Web and Mobile Application — searching RAWG and caching games into our own database.
   version: 1.0.0
   title: Cartridge - Games
   contact:
@@ -12,74 +12,267 @@ info:
 
 tags:
   - name: Games
-    description: Global game search and caching endpoints
+    description: Game search and caching endpoints
 
 paths:
-  /games/search:
+  /api/games/search:
     get:
       tags:
         - Games
-      summary: Get game from global entries
-      operationId: getGlobalGame
-      description: Get game from global entries
+      summary: Search for games
+      operationId: searchGames
+      description: >
+        Checks our own cached `Game` collection first, then falls back to
+        RAWG for anything not already saved. Results already in our
+        database include a `gameId`; results only found via RAWG include
+        a `rawgId` instead (use `POST /games/rawg/{rawgId}` to cache one
+        before referencing it in a collection entry).
       parameters:
-        - in: query
-          name: query
+        - name: search
+          in: query
+          required: true
+          description: Search term.
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    nullable: true
+                  previous:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GameSearchResult'
+        '400':
+          description: Missing search term
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/games/rawg/{rawgId}:
+    parameters:
+      - name: rawgId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags:
+        - Games
+      summary: Get one game's details directly from RAWG
+      operationId: getGameByRawgId
+      description: Fetches and formats a single game from RAWG. Does not save it to our database — use the POST version of this endpoint for that.
+      responses:
+        '200':
+          description: Game details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameSearchResult'
+        '400':
+          description: Invalid RAWG game ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      tags:
+        - Games
+      summary: Cache a RAWG game into our database
+      operationId: saveGame
+      description: Fetches the game from RAWG and upserts it into our own `Game` collection (matched on `rawgId`), returning the saved document with its own `gameId`.
+      responses:
+        '200':
+          description: Game saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  game:
+                    $ref: '#/components/schemas/Game'
+        '400':
+          description: Invalid RAWG game ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/games/{gameId}:
+    get:
+      tags:
+        - Games
+      summary: Get a saved game by its own ID
+      operationId: getSavedGame
+      parameters:
+        - name: gameId
+          in: path
           required: true
           schema:
             type: string
       responses:
         '200':
-          description:  Retrieved Global Game Entry Successful
+          description: Game found
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Games'
+                $ref: '#/components/schemas/Game'
         '404':
-          description: Game NOT Found
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
 components:
   schemas:
-    Games:
+    GameSearchResult:
       type: object
+      description: A formatted game result. Has gameId if already cached, otherwise rawgId.
       properties:
         gameId:
-          type: integer
-          example: 1234
-        gameName:
           type: string
-          example: "Skyrim"
+          nullable: true
+          example: "64f1a2b3c4d5e6f7a8b9c0e1"
+        rawgId:
+          type: integer
+          example: 3498
+        name:
+          type: string
+          example: "Grand Theft Auto V"
         coverImage:
           type: string
           format: uri
-          example: "https://example.com"
+          nullable: true
         genres:
           type: array
           items:
             type: string
-          example:
-            - Action
-            - Adventure
         platforms:
           type: array
           items:
             type: string
-          example:
-            - Playstation
-            - Xbox
         releaseDate:
           type: string
           format: date
-          example: "2020-03-30"
+          nullable: true
+        developer:
+          type: string
+          nullable: true
         description:
           type: string
-          example: "Disco Elysium - The Final Cut is a groundbreaking role playing game. You are a detective with a unique skill system at your disposal and a whole city to carve your path across. Interrogate unforgettable characters, crack murders or take bribes. Become a hero or an absolute disaster of a human being."
+
+    Game:
+      type: object
+      description: A game as stored in our own database.
+      properties:
+        gameId:
+          type: string
+          example: "64f1a2b3c4d5e6f7a8b9c0e1"
+        rawgId:
+          type: integer
+          example: 3498
+        name:
+          type: string
+          example: "Grand Theft Auto V"
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+        genres:
+          type: array
+          items:
+            type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        releaseDate:
+          type: string
+          format: date
+          nullable: true
+        developer:
+          type: string
+          nullable: true
+        description:
+          type: string
         cachedAt:
           type: string
           format: date-time
-          example: "2026-07-08T12:00:00Z"
 
 servers:
   - url: http://www.cartridgeapp.fun

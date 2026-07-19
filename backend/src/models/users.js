@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     verificationToken:{
         type: String
     },
+    pendingEmail: {
+        type: String,
+        default: null
+    },
     resetPasswordToken:{
         type: String
     },

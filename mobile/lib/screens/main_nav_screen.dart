@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_state.dart';
+import '../widgets/pending_email_banner.dart';
 import 'home_screen.dart';
 import 'collection_screen.dart';
 import 'lists_screen.dart';
@@ -38,7 +41,21 @@ class _MainNavScreenState extends State<MainNavScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: screens),
+      body: Column(
+        children: [
+          Consumer<AuthState>(
+            builder: (context, authState, child) {
+              final pendingEmail = authState.pendingEmail;
+              return pendingEmail == null
+                  ? const SizedBox.shrink()
+                  : PendingEmailBanner(pendingEmail: pendingEmail);
+            },
+          ),
+          Expanded(
+            child: IndexedStack(index: _selectedIndex, children: screens),
+          ),
+        ],
+      ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           backgroundColor: AppColors.darkGreen,

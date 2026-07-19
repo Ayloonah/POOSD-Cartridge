@@ -19,14 +19,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   // Reads user input and manages it
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   // Called automatically when screen is destroyed
   @override
   void dispose() {
     // Release resources used by controllers
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     // Do what dispose() usually does as well
     super.dispose();
@@ -37,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   bool _isFormValid() {
-    return _usernameController.text.trim().isNotEmpty &&
+    return _emailController.text.trim().isNotEmpty &&
         _passwordController.text.trim().isNotEmpty;
   }
 
@@ -50,8 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.post('/login', {
-        'username': _usernameController.text,
+      final response = await apiService.post('/auth/login', {
+        'email': _emailController.text,
         'password': _passwordController.text,
       });
 
@@ -62,10 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final authState = Provider.of<AuthState>(context, listen: false);
+        // Backend embeds "Bearer " into the token string itself; strip it here
+        // since ApiService adds its own "Bearer " prefix on authenticated calls
+        final rawToken = (data['token'] as String).replaceFirst('Bearer ', '');
         await authState.login(
-          data['token'],
-          data['userId'].toString(),
-          data['username'],
+          rawToken,
+          data['user']['id'].toString(),
+          data['user']['email'],
         );
 
         if (!mounted) return;
@@ -76,8 +79,19 @@ class _LoginScreenState extends State<LoginScreen> {
           (route) => false,
         );
       } else {
+        // Surface the backend's own message (e.g. unverified-account notice
+        // on a 403) instead of a generic one, falling back if unparseable
+        String message = 'Invalid email or password';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) {
+            message = data['message'];
+          }
+        } catch (_) {
+          // Keep the generic message
+        }
         setState(() {
-          _errorMessage = 'Invalid username or password';
+          _errorMessage = message;
         });
       }
     } catch (e) {
@@ -108,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Username',
+                'Email Address',
                 style: GoogleFonts.roboto(
                   color: AppColors.textLight,
                   fontSize: 14,
@@ -116,11 +130,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _usernameController,
+                controller: _emailController,
                 onChanged: (_) => setState(() {}),
                 style: GoogleFonts.roboto(color: Colors.black87),
                 decoration: InputDecoration(
-                  hintText: 'Username',
+                  hintText: 'Email Address',
                   hintStyle: GoogleFonts.roboto(color: Colors.black45),
                   filled: true,
                   fillColor: AppColors.lightGreen,
