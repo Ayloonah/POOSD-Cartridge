@@ -20,6 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
+  final _deletePasswordController = TextEditingController();
   final _newPasswordFocusNode = FocusNode();
 
   String _originalUsername = '';
@@ -65,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
+    _deletePasswordController.dispose();
     _newPasswordFocusNode.dispose();
     super.dispose();
   }
@@ -234,35 +236,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     final body = <String, dynamic>{};
-    if (_usernameChanged) body['username'] = _usernameController.text.trim();
-    if (_emailChanged) body['email'] = _emailController.text.trim();
+    if (_usernameChanged) body['newUsername'] = _usernameController.text.trim();
+    if (_emailChanged) body['newEmail'] = _emailController.text.trim();
     if (_wantsPasswordChange) {
       body['currentPassword'] = _currentPasswordController.text;
       body['newPassword'] = _newPasswordController.text;
+      body['confirmNewPassword'] = _confirmNewPasswordController.text;
     }
 
     try {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
-      final response = await apiService.put('/auth/profile', body, token: authState.token);
+      final response = await apiService.put('/auth/account', body, token: authState.token);
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final user = data['user'] as Map<String, dynamic>?;
 
-        _originalUsername = data['username']?.toString() ?? _usernameController.text.trim();
+        _originalUsername = user?['username']?.toString() ?? _usernameController.text.trim();
         _usernameController.text = _originalUsername;
 
         final pendingEmail = data['pendingEmail']?.toString();
         await authState.setPendingEmail(
           (pendingEmail != null && pendingEmail.isNotEmpty) ? pendingEmail : null,
         );
-        if (data['email'] != null) {
-          _originalEmail = data['email'].toString();
+        if (user?['email'] != null) {
+          _originalEmail = user!['email'].toString();
           _emailController.text = _originalEmail;
-          if (data['email'] != authState.email) {
-            await authState.updateEmail(data['email'].toString());
+          if (user['email'] != authState.email) {
+            await authState.updateEmail(user['email'].toString());
           }
         }
 
@@ -315,12 +319,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleDeleteAccount() async {
+    _deletePasswordController.clear();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Account?'),
-        content: const Text(
-          'This permanently deletes your account, collection, and lists. This cannot be undone.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This permanently deletes your account, collection, and lists. This cannot be undone.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _deletePasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Current Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -337,12 +356,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    if (_deletePasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your password to confirm.')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
-      final response = await apiService.delete('/auth/account', token: authState.token);
+      final response = await apiService.delete(
+        '/auth/account',
+        token: authState.token,
+        body: {'currentPassword': _deletePasswordController.text},
+      );
 
       if (!mounted) return;
 
@@ -352,9 +382,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _goToSplash();
       } else {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not delete account. Please try again.')),
-        );
+        String message = 'Could not delete account. Please try again.';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) message = data['message'];
+        } catch (_) {
+          // Keep the generic message
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       if (mounted) {

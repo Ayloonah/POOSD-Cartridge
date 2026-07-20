@@ -88,7 +88,7 @@ class _EditListScreenState extends State<EditListScreen> {
     try {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
-      final response = await apiService.put('/lists/${widget.list['listId']}', {
+      final response = await apiService.patch('/lists/${widget.list['listId']}', {
         'name': _nameController.text.trim(),
         'coverImage': _selectedCoverUrl,
         'entryIds': _selectedEntryIds.toList(),
