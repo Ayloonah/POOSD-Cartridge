@@ -24,6 +24,10 @@ const gameSchema = new mongoose.Schema({
     releaseDate: {
         type: Date
     },
+    developers: {
+        type: [String],
+        default: []
+    },
     description:{
         type: String
     },

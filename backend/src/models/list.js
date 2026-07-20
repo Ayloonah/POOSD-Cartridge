@@ -19,13 +19,7 @@ const listSchema = new mongoose.Schema(
             type: String,
             default: null,
             trim: true
-        },
-        games: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Game"
-            }
-        ]
+        }
         },
         {
             timestamps: true

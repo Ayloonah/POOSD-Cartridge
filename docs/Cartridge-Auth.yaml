@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: This is the API documentation for the Authentication endpoints of the Cartridge Web and Mobile Application.
+  description: API documentation for the Authentication and account/profile endpoints of the Cartridge Web and Mobile Application.
   version: 1.0.0
   title: Cartridge - Auth
   contact:
@@ -12,89 +12,353 @@ info:
 
 tags:
   - name: Auth
-    description: Authentication endpoint
+    description: Login, registration, and email/password recovery
+  - name: Profile
+    description: Reading and editing the logged-in user's own account
 
 paths:
-  /login:
+  /api/auth/login:
     post:
       tags:
         - Auth
-      summary: Logs into Cartridge Application
+      summary: Log into Cartridge
       operationId: doLogin
-      description: Logs into Cartridge Application
+      description: >
+        Logs a user in by email and password. If the account exists but
+        hasn't been verified yet, this also generates a fresh verification
+        token and re-sends the verification email as a side effect of the
+        failed attempt.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Login'
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login Successful
+          description: Login successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  userId:
-                    type: integer
-                  username:
-                    type: string
-                  token:
-                    type: string
-        '401':
-          description: Unauthorized
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Missing email/password, account not found, or wrong password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          description: Account exists but is not yet verified. A new verification email was just sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
 
-  /register:
+  /api/auth/register:
     post:
       tags:
         - Auth
-      summary: Register new user to Cartridge Application
+      summary: Register a new Cartridge account
       operationId: doRegister
-      description: Register new user to Cartridge Application
+      description: >
+        Creates the account (unverified) and sends a verification email.
+        Does not log the user in or return a token — they must verify their
+        email and then log in separately.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Register'
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Registration Successful
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Missing fields, or an account already exists for this email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  userId:
-                    type: integer
-                  username:
+                  error:
                     type: string
-                  token:
-                    type: string
-        '400':
-          description: Bad Request
 
-  /logout:
+  /api/auth/logout:
     post:
       tags:
         - Auth
-      summary: Log user out of account on Cartridge Application
+      summary: Log out of Cartridge
       operationId: doLogout
-      description: Log user out of account on Cartridge Application
       responses:
         '200':
-          description: Logout Successful
+          description: Logout successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/forgotPassword:
+    post:
+      tags:
+        - Auth
+      summary: Request a password reset email
+      operationId: doForgotPassword
+      description: >
+        Generates a reset token (10 minute expiry) and emails a reset link
+        if an account exists for the given email. Always responds
+        successfully either way, so the response can't be used to check
+        whether an email is registered.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: "example@email.com"
+      responses:
+        '200':
+          description: No account exists for this email (reported the same as success, on purpose)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '201':
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
         '400':
-          description: Bad Request
+          description: Missing email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '502':
+          description: Token was generated, but the email failed to send
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+
+  /api/auth/resetPassword:
+    post:
+      tags:
+        - Auth
+      summary: Reset a password using an emailed token
+      operationId: doResetPassword
+      description: >
+        The token comes from the emailed reset link and is passed as a
+        query parameter, not in the request body. Token is single-use and
+        expires 10 minutes after being generated.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newPassword
+                - confirmNewPassword
+              properties:
+                newPassword:
+                  type: string
+                  example: "NewSecret1!"
+                confirmNewPassword:
+                  type: string
+                  example: "NewSecret1!"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Missing fields, passwords don't match, or the token is invalid/expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/verifyEmail:
+    get:
+      tags:
+        - Auth
+      summary: Confirm an account's email address
+      operationId: doVerifyEmail
+      description: The token comes from the emailed verification link and is passed as a query parameter.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Missing token, or the token is invalid/expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Profile
+      summary: Get the logged-in user's own profile
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/checkUsername:
+    get:
+      tags:
+        - Profile
+      summary: Check whether a username is available
+      operationId: checkUsername
+      description: Case-insensitive match against existing usernames. Treats the caller's own current username as available.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameAvailabilityResponse'
+        '400':
+          description: Missing or blank username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/profile:
+    put:
+      tags:
+        - Profile
+      summary: Update the logged-in user's profile
+      operationId: updateProfile
+      description: >
+        Only send the fields being changed. If newPassword is set,
+        currentPassword must also be sent and correct. If email differs
+        from the account's current email, the change isn't applied
+        immediately — it's stored as pendingEmail, a re-verification email
+        is sent, and the previous email stays valid for login until the
+        new one is confirmed.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '400':
+          description: Invalid input, or current password incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/auth/account:
+    delete:
+      tags:
+        - Profile
+      summary: Delete the logged-in user's account
+      operationId: deleteAccount
+      description: Deletes the account and cascade-deletes their GameUserEntries and Lists.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account deleted
+        '204':
+          description: Account deleted
 
 components:
   securitySchemes:
@@ -103,43 +367,117 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    Login:
+    LoginRequest:
       type: object
       required:
-        - username
+        - email
         - password
       properties:
-        username:
+        email:
           type: string
-          example: "gamer"
+          example: "example@email.com"
         password:
           type: string
           example: "secret"
 
-    Register:
+    LoginResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful."
+        token:
+          type: string
+          description: Raw JWT (no "Bearer " prefix included), expires in 1 hour.
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "64f1a2b3c4d5e6f7a8b9c0d2"
+            email:
+              type: string
+              example: "example@email.com"
+
+    RegisterRequest:
       type: object
       required:
-        - firstName
-        - lastName
-        - email
         - username
+        - email
         - password
       properties:
-        firstName:
-          type: string
-          example: "Adam"
-        lastName:
-          type: string
-          example: "Smith"
-        email:
-          type: string
-          example: "example@email.com"
         username:
           type: string
           example: "gamer"
+        email:
+          type: string
+          example: "example@email.com"
         password:
           type: string
           example: "secret"
+
+    MeResponse:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "gamer"
+        email:
+          type: string
+          example: "example@email.com"
+        pendingEmail:
+          type: string
+          nullable: true
+          example: null
+        profilePicture:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        currentPassword:
+          type: string
+          description: Required if newPassword is set.
+        newPassword:
+          type: string
+        profilePicture:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+
+    UsernameAvailabilityResponse:
+      type: object
+      properties:
+        available:
+          type: boolean
+        message:
+          type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    SuccessMessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
 
 servers:
   - url: http://www.cartridgeapp.fun
