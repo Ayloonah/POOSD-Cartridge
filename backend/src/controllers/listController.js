@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
+const listFields = "_id name isPublic coverImage createdAt updatedAt";
 const List = require("../models/list");
+const GameUserEntry = require("../models/gameUserEntry");
 const createList = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -25,7 +27,14 @@ const createList = async (req, res) => {
             coverImage
         });
 
-        res.status(201).json(list);
+          res.status(201).json({
+            _id: list._id,
+            name: list.name,
+            isPublic: list.isPublic,
+            coverImage: list.coverImage,
+            createdAt: list.createdAt,
+            updatedAt: list.updatedAt
+        });
     } catch (error) {
         res.status(500).json({
             error: error.message
@@ -45,7 +54,7 @@ const getUserLists = async (req, res) => {
 
         const lists = await List.find({
             userId
-        }).sort({
+        }).select(listFields).sort({
             updatedAt: -1
         });
 
@@ -81,6 +90,17 @@ const deleteList = async (req, res) => {
                 error: "List not found"
             });
         }
+         await GameUserEntry.updateMany(
+            {
+                userId,
+                listIds: listId
+            },
+            {
+                $pull: {
+                    listIds: listId
+                }
+            }
+        );
 
         res.status(200).json({
             message: "List deleted successfully"
@@ -127,7 +147,7 @@ const updateListName = async (req, res) => {
                 new: true,
                 runValidators: true
             }
-        );
+        ).select("listFields");
 
         if (!updatedList) {
             return res.status(404).json({

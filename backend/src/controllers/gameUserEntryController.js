@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const List = require("../models/list");
 const Game = require("../models/games");
 const GameUserEntry = require("../models/gameUserEntry");
+const gameSummaryFields =  "_id name coverImage genres releaseDate developers";
+const entryFields = "_id gameId listIds played hoursPlayed rating review platformPlayed createdAt updatedAt";
 const validIds = (...ids) => {
     return ids.every((id)=>
     mongoose.Types.ObjectId.isValid(id)
@@ -53,9 +55,9 @@ const addGameToUserList = async (req, res) =>{
                 upsert: true,
                 runValidators: true
             }
-        ).populate({
+        ).select(entryFields).populate({
     path: "gameId",
-    select: "name coverImage genres releaseDate developers"
+    select: gameSummaryFields
 });
         res.status(200).json({
             message: "Game added to list successfully",
@@ -100,9 +102,9 @@ const removeGameFromUserList = async (req, res) =>{
                 new: true,
                 runValidators: true
             }
-        ).populate({
+        ).select(entryFields).populate({
     path: "gameId",
-    select: "name coverImage genres releaseDate developers"
+    select: gameSummaryFields
 });
           if (!entry) {
             return res.status(404).json({
@@ -133,9 +135,9 @@ const getUserCollection = async (req, res) => {
 
         const entries = await GameUserEntry.find({
             userId
-        }).populate({
+        }).select(entryFields).populate({
             path: "gameId",
-            select: "name coverImage genres releaseDate developers"
+            select: gameSummaryFields
         });
 
         res.status(200).json(entries);
@@ -159,9 +161,9 @@ const getGameEntry = async (req, res) => {
         const entry = await GameUserEntry.findOne({
             _id: entryId,
             userId
-        }).populate({
+        }).select(entryFields).populate({
             path: "gameId",
-            select: "name coverImage genres releaseDate developers"
+            select: gameSummaryFields
         });
 
         if (!entry) {

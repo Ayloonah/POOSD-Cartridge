@@ -1,4 +1,5 @@
 const Game = require ("../models/games");
+const fullGameFields = "_id rawgId name coverImage genres platforms releaseDate developers description cachedAt";
 const {
     searchRawgGames,
     getRawgGame
@@ -15,15 +16,6 @@ const formatGame = (rawgGame) => {
                 (item) => item.platform.name
             ) || [],
         releaseDate: rawgGame.released || null,
-        developers:
-    rawgGame.developers?.map(
-        (developer) => developer.name
-    ) || [],
-        description:
-            rawgGame.description_raw ||
-            rawgGame.description ||
-            "",
-        cachedAt: new Date()
     };
 };
 
@@ -98,7 +90,7 @@ const saveGame = async (req, res) => {
                 upsert: true,
                 runValidators: true
             }
-        );
+        ).select(fullGameFields);
         res.status(200).json({
             message: "Game saved successfully",
             game
@@ -111,7 +103,7 @@ const saveGame = async (req, res) => {
 };
 const getSavedGame = async (req, res) => {
     try{
-        const game = await Game.findById(req.params.gameId);
+        const game = await Game.findById(req.params.gameId).select(fullGameFields);
         if(!game)
         {
             return res.status(400).json({
