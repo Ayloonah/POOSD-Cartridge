@@ -33,7 +33,7 @@ const sendVerificationEmail = async (userEmail, token) => {
 
 // Function that handles password resets
 const sendPasswordResetEmail = async (userEmail, token) => {
-    const verifiedSender = 'no-reply@cartridgeapp.fun'; 
+    const verifiedSender = 'cartridge.app@gmail.com'; 
 
     const resetLink = `${process.env.APP_BASE_URL}/reset-password?token=${token}`;
     
