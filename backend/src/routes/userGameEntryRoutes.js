@@ -9,11 +9,13 @@ const {
     removeGameFromUserList,
     getUserCollection,
     getGameEntry,
-    updateGameEntry
+    updateGameEntry,
+    createGameEntry,
+    deleteGameEntry
 } = require("../controllers/gameUserEntryController");
 // Every route below this line requires a valid JWT
 router.use(authenticateToken);
-
+router.post("/", createGameEntry);
 // Get the authenticated user's entire game collection
 router.get(
     "/collection",
@@ -31,6 +33,7 @@ router.patch(
     "/collection/:entryId",
     updateGameEntry
 );
+router.delete("/:entryId", deleteGameEntry);
 
 // Add a saved game to one of the user's lists
 router.post(
