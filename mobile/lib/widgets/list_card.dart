@@ -47,7 +47,7 @@ class ListCard extends StatelessWidget {
                 top: 4,
                 right: 4,
                 child: Material(
-                  color: Colors.black45,
+                  color: Colors.black87,
                   shape: const CircleBorder(),
                   child: IconButton(
                     icon: const Icon(Icons.edit, size: 18, color: Colors.white),
