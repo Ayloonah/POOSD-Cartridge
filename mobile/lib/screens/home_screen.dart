@@ -19,10 +19,10 @@ class HomeScreen extends StatefulWidget {
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   List<dynamic> _recentGames = [];
@@ -34,6 +34,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadDashboardData();
   }
+
+  // Called by MainNavScreen when this tab is (re)selected, since the
+  // IndexedStack keeps this screen alive rather than rebuilding it — without
+  // this, changes made on other tabs (e.g. adding a game) would never show
+  // up here until the app restarts.
+  Future<void> refresh() => _loadDashboardData();
 
   // Fetch the user's game entries and lists, then derive the 5 most recent of each
   Future<void> _loadDashboardData() async {
@@ -218,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           SizedBox(
-            height: 180,
+            height: 212,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: items.length,
