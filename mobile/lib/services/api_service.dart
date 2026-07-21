@@ -44,14 +44,36 @@ class ApiService {
     return response;
   }
 
+  // patch()
+  Future<http.Response> patch(String endpoint, Map<String, dynamic> body, {String? token}) async {
+    final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    final response = await http.patch(
+      url,
+      headers: headers,
+      body: jsonEncode(body)
+    );
+    return response;
+  }
+
   // delete()
-  Future<http.Response> delete(String endpoint, {String? token}) async {
+  Future<http.Response> delete(String endpoint, {String? token, Map<String, dynamic>? body}) async {
     final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
     final headers = <String, String>{};
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final response = await http.delete(url, headers: headers);
+    if (body != null) {
+      headers['Content-Type'] = 'application/json';
+    }
+    final response = await http.delete(
+      url,
+      headers: headers,
+      body: body != null ? jsonEncode(body) : null,
+    );
     return response;
   }
 }

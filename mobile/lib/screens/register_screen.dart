@@ -200,6 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'email': _emailController.text,
         'username': _usernameController.text,
         'password': _passwordController.text,
+        'confirmPassword': _passwordValidationController.text,
       });
 
       // If widget no longer on screen, leave
