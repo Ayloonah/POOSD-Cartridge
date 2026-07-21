@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/constants/app_colors.dart';
 
 // Checklist of the user's collection entries, used to pick which games
 // belong to a list. Games not yet in the collection aren't selectable here
@@ -31,7 +32,8 @@ class GameChecklist extends StatelessWidget {
             secondary: SizedBox(
               width: 40,
               height: 56,
-              child: (entry['coverImage'] == null ||
+              child:
+                  (entry['coverImage'] == null ||
                       entry['coverImage'].toString().isEmpty)
                   ? Container(color: Colors.grey[300])
                   : Image.network(
@@ -43,6 +45,7 @@ class GameChecklist extends StatelessWidget {
             ),
             title: Text(entry['name']?.toString() ?? ''),
             value: selectedEntryIds.contains(entry['entryId']?.toString()),
+            activeColor: AppColors.lightGreen,
             onChanged: (_) => onToggle(entry['entryId']?.toString() ?? ''),
           ),
       ],

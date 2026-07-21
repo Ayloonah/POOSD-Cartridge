@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import 'game_entry_form_screen.dart';
@@ -76,7 +78,8 @@ class _AddGameScreenState extends State<AddGameScreen> {
   // Search results only ever have rawgId right now (backend doesn't check
   // the cache before hitting RAWG) — gameId would only appear if that changes
   Future<void> _selectResult(Map<String, dynamic> game) async {
-    final platforms = (game['platforms'] as List?)?.map((p) => p.toString()).toList() ?? [];
+    final platforms =
+        (game['platforms'] as List?)?.map((p) => p.toString()).toList() ?? [];
     final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -110,76 +113,194 @@ class _AddGameScreenState extends State<AddGameScreen> {
     }
   }
 
+  // A light-green pill button used for Go Back / New Game Entry, matching
+  // the app's dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
   // Screen contents
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add a Game')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _searchController,
-              onSubmitted: (_) => _search(),
-              decoration: InputDecoration(
-                labelText: 'Search for a game',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _search,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: AppColors.darkGreen,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (_) => _search(),
+                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    cursorColor: AppColors.darkGreen,
+                    decoration: InputDecoration(
+                      hintText: 'Search for a game',
+                      hintStyle: GoogleFonts.roboto(
+                        color: AppColors.darkGreen.withOpacity(0.6),
+                      ),
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.lightGreen,
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.search, color: AppColors.darkGreen),
+                        onPressed: _search,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      _actionButton(
+                        icon: Icons.arrow_back,
+                        label: 'Go Back',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 8),
+                      _actionButton(
+                        icon: Icons.add,
+                        label: 'New Game Entry',
+                        onPressed: _createManually,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_isSearching)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.lightGreen,
+                      ),
+                    ),
+                  if (_errorMessage != null)
+                    Text(
+                      _errorMessage!,
+                      style: GoogleFonts.roboto(color: Colors.red),
+                    ),
+                  if (!_isSearching && _hasSearched && _results.isEmpty) ...[
+                    Text(
+                      'No games found for "${_searchController.text.trim()}".',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.roboto(),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.lightGreen,
+                        foregroundColor: AppColors.darkGreen,
+                      ),
+                      onPressed: _createManually,
+                      child: Text(
+                        'Create a New Game Entry',
+                        style: GoogleFonts.roboto(
+                          color: AppColors.darkGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (!_isSearching && _results.isNotEmpty)
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _results.length,
+                        itemBuilder: (context, index) {
+                          final game = _results[index];
+                          final coverImage = game['coverImage']?.toString();
+                          return ListTile(
+                            leading: SizedBox(
+                              width: 40,
+                              height: 56,
+                              child: (coverImage == null || coverImage.isEmpty)
+                                  ? Container(color: Colors.grey[300])
+                                  : Image.network(
+                                      coverImage,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                                color: Colors.grey[300],
+                                              ),
+                                    ),
+                            ),
+                            title: Text(
+                              game['name']?.toString() ?? '',
+                              style: GoogleFonts.roboto(),
+                            ),
+                            subtitle: Text(
+                              (game['platforms'] as List?)?.join(', ') ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.roboto(),
+                            ),
+                            onTap: () => _selectResult(game),
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            if (_isSearching) const Center(child: CircularProgressIndicator()),
-            if (_errorMessage != null)
-              Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-            if (!_isSearching && _hasSearched && _results.isEmpty) ...[
-              Text(
-                'No games found for "${_searchController.text.trim()}".',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: _createManually,
-                child: const Text('Create a New Game Entry'),
-              ),
-            ],
-            if (!_isSearching && _results.isNotEmpty)
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _results.length,
-                  itemBuilder: (context, index) {
-                    final game = _results[index];
-                    final coverImage = game['coverImage']?.toString();
-                    return ListTile(
-                      leading: SizedBox(
-                        width: 40,
-                        height: 56,
-                        child: (coverImage == null || coverImage.isEmpty)
-                            ? Container(color: Colors.grey[300])
-                            : Image.network(
-                                coverImage,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(color: Colors.grey[300]),
-                              ),
-                      ),
-                      title: Text(game['name']?.toString() ?? ''),
-                      subtitle: Text(
-                        (game['platforms'] as List?)?.join(', ') ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onTap: () => _selectResult(game),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
