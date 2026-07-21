@@ -315,7 +315,7 @@ exports.me = async (req, res) => {
             return res.status(400).json({ message: "Verfication token is missing." })
         }
 
-        const user = await User.findById(userId).select('profilePicture username bio email');
+        const user = await User.findById(userId).select('profilePicture username bio email pendingEmail');
 
         if (!user) {
             return res.status(404).json({ message: "User NOT Found!"})
