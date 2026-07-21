@@ -7,6 +7,7 @@ import '../models/list_sort_option.dart';
 import '../models/collection_filters.dart';
 import '../widgets/list_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
+import '../utils/api_normalize.dart';
 import 'collection_screen.dart';
 import 'create_list_screen.dart';
 import 'edit_list_screen.dart';
@@ -15,10 +16,10 @@ class ListsScreen extends StatefulWidget {
   const ListsScreen({super.key});
 
   @override
-  State<ListsScreen> createState() => _ListsScreenState();
+  State<ListsScreen> createState() => ListsScreenState();
 }
 
-class _ListsScreenState extends State<ListsScreen> {
+class ListsScreenState extends State<ListsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -33,6 +34,10 @@ class _ListsScreenState extends State<ListsScreen> {
     _loadLists();
   }
 
+  // Called by MainNavScreen when this tab is (re)selected — see the same
+  // note on HomeScreenState.refresh() for why this is necessary.
+  Future<void> refresh() => _loadLists();
+
   // Fetch the user's lists and their collection (the latter is needed for
   // the create/edit list flows' game checklists)
   Future<void> _loadLists() async {
@@ -46,16 +51,21 @@ class _ListsScreenState extends State<ListsScreen> {
       final apiService = ApiService();
 
       final listsResponse = await apiService.get('/lists', token: token);
-      final entriesResponse = await apiService.get('/gameuserentries', token: token);
+      final entriesResponse =
+          await apiService.get('/user-game-entries/collection', token: token);
 
       if (!mounted) return;
 
       setState(() {
         _lists = listsResponse.statusCode == 200
             ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
+                .map(normalizeList)
+                .toList()
             : [];
         _collectionEntries = entriesResponse.statusCode == 200
             ? List<Map<String, dynamic>>.from(jsonDecode(entriesResponse.body))
+                .map(normalizeEntry)
+                .toList()
             : [];
         _sortLists();
       });

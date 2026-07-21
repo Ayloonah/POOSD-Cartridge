@@ -22,6 +22,7 @@ class EditListScreen extends StatefulWidget {
 class _EditListScreenState extends State<EditListScreen> {
   late final TextEditingController _nameController;
   late Set<String> _selectedEntryIds;
+  late Set<String> _initialEntryIds; // snapshot for diffing which games changed on save
   String? _selectedCoverUrl;
 
   bool _isSaving = false;
@@ -43,6 +44,7 @@ class _EditListScreenState extends State<EditListScreen> {
         })
         .map((entry) => entry['entryId'].toString())
         .toSet();
+    _initialEntryIds = Set.from(_selectedEntryIds);
 
     _selectedCoverUrl = widget.list['coverImage']?.toString();
   }
@@ -88,23 +90,51 @@ class _EditListScreenState extends State<EditListScreen> {
     try {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
-      final response = await apiService.put('/lists/${widget.list['listId']}', {
+
+      // Game membership isn't part of the list-update endpoint — only name
+      // and cover are
+      final response = await apiService.patch('/lists/${widget.list['listId']}', {
         'name': _nameController.text.trim(),
         'coverImage': _selectedCoverUrl,
-        'entryIds': _selectedEntryIds.toList(),
       }, token: token);
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        Navigator.pop(context, true);
-      } else {
+      if (response.statusCode != 200) {
         final data = jsonDecode(response.body);
         setState(() {
           _errorMessage =
               data['message'] ?? data['error'] ?? 'Could not save. Please try again.';
         });
+        return;
       }
+
+      // Sync game membership via the dedicated per-game endpoints
+      final listId = widget.list['listId'];
+      final added = _selectedEntryIds.difference(_initialEntryIds);
+      final removed = _initialEntryIds.difference(_selectedEntryIds);
+      for (final entryId in added) {
+        final gameId = _gameIdForEntry(entryId);
+        if (gameId != null) {
+          await apiService.post(
+            '/user-game-entries/lists/$listId/games/$gameId',
+            {},
+            token: token,
+          );
+        }
+      }
+      for (final entryId in removed) {
+        final gameId = _gameIdForEntry(entryId);
+        if (gameId != null) {
+          await apiService.delete(
+            '/user-game-entries/lists/$listId/games/$gameId',
+            token: token,
+          );
+        }
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
     } catch (e) {
       setState(() {
         _errorMessage = 'Something went wrong. Please try again.';
@@ -116,6 +146,14 @@ class _EditListScreenState extends State<EditListScreen> {
         });
       }
     }
+  }
+
+  String? _gameIdForEntry(String entryId) {
+    final entry = widget.collectionEntries.firstWhere(
+      (e) => e['entryId']?.toString() == entryId,
+      orElse: () => <String, dynamic>{},
+    );
+    return entry['gameId']?.toString();
   }
 
   Future<void> _handleDelete() async {

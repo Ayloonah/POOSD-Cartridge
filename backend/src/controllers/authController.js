@@ -349,7 +349,7 @@ exports.checkUsername = async (req, res) => {
 
         if (existingUser) {
             if (currentUserId && existingUser._id.toString() === currentUserId) {
-                return res.status(400).json({ 
+                return res.status(200).json({ 
                     available: true
                 });
             }

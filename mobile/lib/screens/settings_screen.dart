@@ -17,13 +17,18 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _profilePictureController = TextEditingController();
+  final _bioController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
+  final _deletePasswordController = TextEditingController();
   final _newPasswordFocusNode = FocusNode();
 
   String _originalUsername = '';
   String _originalEmail = '';
+  String _originalProfilePicture = '';
+  String _originalBio = '';
 
   bool? _usernameAvailable; // null = unchanged / not yet checked
   bool _isCheckingUsername = false;
@@ -41,6 +46,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _usernameController.addListener(_onUsernameChanged);
     _emailController.addListener(_onFieldChanged);
+    _profilePictureController.addListener(_onFieldChanged);
+    _bioController.addListener(_onFieldChanged);
     _currentPasswordController.addListener(_onFieldChanged);
     _newPasswordController.addListener(_onFieldChanged);
     _confirmNewPasswordController.addListener(_checkPasswordsMatch);
@@ -54,6 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _usernameController.removeListener(_onUsernameChanged);
     _emailController.removeListener(_onFieldChanged);
+    _profilePictureController.removeListener(_onFieldChanged);
+    _bioController.removeListener(_onFieldChanged);
     _currentPasswordController.removeListener(_onFieldChanged);
     _newPasswordController.removeListener(_onFieldChanged);
     _confirmNewPasswordController.removeListener(_checkPasswordsMatch);
@@ -62,9 +71,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _usernameDebounce?.cancel();
     _usernameController.dispose();
     _emailController.dispose();
+    _profilePictureController.dispose();
+    _bioController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
+    _deletePasswordController.dispose();
     _newPasswordFocusNode.dispose();
     super.dispose();
   }
@@ -91,6 +103,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _usernameController.text = _originalUsername;
           _originalEmail = data['email']?.toString() ?? '';
           _emailController.text = _originalEmail;
+          _originalProfilePicture = data['profilePicture']?.toString() ?? '';
+          _profilePictureController.text = _originalProfilePicture;
+          _originalBio = data['bio']?.toString() ?? '';
+          _bioController.text = _originalBio;
         });
 
         final pendingEmail = data['pendingEmail']?.toString();
@@ -128,6 +144,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _emailController.text.trim().isNotEmpty &&
       _emailController.text.trim() != _originalEmail;
 
+  bool get _profilePictureChanged =>
+      _profilePictureController.text.trim() != _originalProfilePicture;
+
+  bool get _bioChanged => _bioController.text.trim() != _originalBio;
+
   bool get _wantsPasswordChange =>
       _currentPasswordController.text.isNotEmpty ||
       _newPasswordController.text.isNotEmpty ||
@@ -156,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
       final response = await apiService.get(
-        '/auth/check-username?username=${Uri.encodeQueryComponent(candidate)}',
+        '/auth/checkUsername?username=${Uri.encodeQueryComponent(candidate)}',
         token: authState.token,
       );
 
@@ -224,7 +245,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (_getPasswordError(_newPasswordController.text) != null) return false;
       if (_newPasswordController.text != _confirmNewPasswordController.text) return false;
     }
-    return _usernameChanged || _emailChanged || _wantsPasswordChange;
+    return _usernameChanged ||
+        _emailChanged ||
+        _wantsPasswordChange ||
+        _profilePictureChanged ||
+        _bioChanged;
   }
 
   Future<void> _handleSave() async {
@@ -233,63 +258,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _errorMessage = null;
     });
 
-    final body = <String, dynamic>{};
-    if (_usernameChanged) body['username'] = _usernameController.text.trim();
-    if (_emailChanged) body['email'] = _emailController.text.trim();
+    final accountBody = <String, dynamic>{};
+    if (_usernameChanged) accountBody['newUsername'] = _usernameController.text.trim();
+    if (_emailChanged) accountBody['newEmail'] = _emailController.text.trim();
     if (_wantsPasswordChange) {
-      body['currentPassword'] = _currentPasswordController.text;
-      body['newPassword'] = _newPasswordController.text;
+      accountBody['currentPassword'] = _currentPasswordController.text;
+      accountBody['newPassword'] = _newPasswordController.text;
+      accountBody['confirmNewPassword'] = _confirmNewPasswordController.text;
     }
+
+    final profileBody = <String, dynamic>{};
+    if (_profilePictureChanged) {
+      profileBody['newProfilePicture'] = _profilePictureController.text.trim();
+    }
+    if (_bioChanged) profileBody['newBio'] = _bioController.text.trim();
 
     try {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
-      final response = await apiService.put('/auth/profile', body, token: authState.token);
 
-      if (!mounted) return;
+      if (accountBody.isNotEmpty) {
+        final response = await apiService.put('/auth/account', accountBody, token: authState.token);
 
-      if (response.statusCode == 200) {
+        if (!mounted) return;
+
+        if (response.statusCode != 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ?? data['error'] ?? 'Could not save changes. Please try again.';
+          });
+          return;
+        }
+
         final data = jsonDecode(response.body);
+        final user = data['user'] as Map<String, dynamic>?;
 
-        _originalUsername = data['username']?.toString() ?? _usernameController.text.trim();
+        _originalUsername = user?['username']?.toString() ?? _usernameController.text.trim();
         _usernameController.text = _originalUsername;
 
         final pendingEmail = data['pendingEmail']?.toString();
         await authState.setPendingEmail(
           (pendingEmail != null && pendingEmail.isNotEmpty) ? pendingEmail : null,
         );
-        if (data['email'] != null) {
-          _originalEmail = data['email'].toString();
+        if (user?['email'] != null) {
+          _originalEmail = user!['email'].toString();
           _emailController.text = _originalEmail;
-          if (data['email'] != authState.email) {
-            await authState.updateEmail(data['email'].toString());
+          if (user['email'] != authState.email) {
+            await authState.updateEmail(user['email'].toString());
           }
         }
 
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmNewPasswordController.clear();
+      }
+
+      if (profileBody.isNotEmpty) {
+        final response = await apiService.put('/auth/profile', profileBody, token: authState.token);
 
         if (!mounted) return;
-        setState(() {
-          _usernameAvailable = null;
-          _newPasswordError = null;
-          _passwordMismatch = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved.')),
-        );
-      } else {
+
+        if (response.statusCode != 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ?? data['error'] ?? 'Could not save changes. Please try again.';
+          });
+          return;
+        }
+
         final data = jsonDecode(response.body);
+        final user = data['user'] as Map<String, dynamic>?;
+
+        _originalProfilePicture =
+            user?['profilePicture']?.toString() ?? _profilePictureController.text.trim();
+        _profilePictureController.text = _originalProfilePicture;
+        _originalBio = user?['bio']?.toString() ?? _bioController.text.trim();
+        _bioController.text = _originalBio;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _usernameAvailable = null;
+        _newPasswordError = null;
+        _passwordMismatch = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings saved.')),
+      );
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage =
-              data['message'] ?? data['error'] ?? 'Could not save changes. Please try again.';
+          _errorMessage = 'Something went wrong. Please try again.';
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Something went wrong. Please try again.';
-      });
     } finally {
       if (mounted) {
         setState(() {
@@ -315,12 +378,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleDeleteAccount() async {
+    _deletePasswordController.clear();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Account?'),
-        content: const Text(
-          'This permanently deletes your account, collection, and lists. This cannot be undone.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This permanently deletes your account, collection, and lists. This cannot be undone.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _deletePasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Current Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -337,12 +415,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    if (_deletePasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your password to confirm.')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
-      final response = await apiService.delete('/auth/account', token: authState.token);
+      final response = await apiService.delete(
+        '/auth/account',
+        token: authState.token,
+        body: {'currentPassword': _deletePasswordController.text},
+      );
 
       if (!mounted) return;
 
@@ -352,9 +441,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _goToSplash();
       } else {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not delete account. Please try again.')),
-        );
+        String message = 'Could not delete account. Please try again.';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) message = data['message'];
+        } catch (_) {
+          // Keep the generic message
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       if (mounted) {
@@ -364,6 +458,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     }
+  }
+
+  Widget _buildAvatar() {
+    if (_originalProfilePicture.isEmpty) {
+      return InitialAvatar(seed: _originalUsername, letter: _originalUsername, radius: 40);
+    }
+    return ClipOval(
+      child: Image.network(
+        _originalProfilePicture,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            InitialAvatar(seed: _originalUsername, letter: _originalUsername, radius: 40),
+      ),
+    );
   }
 
   Widget _usernameSuffixIcon() {
@@ -399,13 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                Center(
-                  child: InitialAvatar(
-                    seed: _originalUsername,
-                    letter: _originalUsername,
-                    radius: 40,
-                  ),
-                ),
+                Center(child: _buildAvatar()),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _usernameController,
@@ -416,6 +520,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     errorText: _usernameChanged && _usernameAvailable == false
                         ? 'That username is taken'
                         : null,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _profilePictureController,
+                  decoration: const InputDecoration(
+                    labelText: 'Profile Picture URL',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _bioController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Bio',
+                    border: OutlineInputBorder(),
+                    alignLabelWithHint: true,
                   ),
                 ),
                 const SizedBox(height: 24),

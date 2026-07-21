@@ -5,8 +5,11 @@ import '../services/api_service.dart';
 import '../services/auth_state.dart';
 
 // Shared form for both adding a new collection entry and editing an existing
-// one. Exactly one of gameId / rawgId / newGame should be set when creating;
-// none of them are used (or needed) when entryId is set, i.e. editing.
+// one. When creating, exactly one of gameId / rawgId / newGame should be
+// set (rawgId/newGame get cached into a real Game first, since the entry
+// endpoint needs an already-cached gameId). When editing, gameId should be
+// the entry's existing game — needed for syncing list membership, since
+// that isn't editable through the entry-update endpoint itself.
 class GameEntryFormScreen extends StatefulWidget {
   final String? gameId;
   final String? rawgId;
@@ -99,47 +102,134 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
     final platformPlayed =
         widget.platforms.isNotEmpty ? _selectedPlatform : _platformFreeTextController.text;
 
-    final body = <String, dynamic>{
-      'played': _played,
-      'hoursPlayed': double.tryParse(_hoursController.text) ?? 0,
-      'rating': _rating,
-      'review': _reviewController.text,
-      'platformPlayed': platformPlayed,
-      'listIds': _selectedListIds.toList(),
-    };
-
-    if (!_isEditing) {
-      if (widget.gameId != null) {
-        body['gameId'] = widget.gameId;
-      } else if (widget.rawgId != null) {
-        body['rawgId'] = widget.rawgId;
-      } else if (widget.newGame != null) {
-        body['newGame'] = widget.newGame;
-      }
-    }
-
     try {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
-      final response = _isEditing
-          ? await apiService.put('/gameuserentries/${widget.entryId}', body, token: token)
-          : await apiService.post('/gameuserentries', body, token: token);
 
-      if (!mounted) return;
+      if (_isEditing) {
+        // List membership isn't part of the entry-update endpoint — only
+        // the entry's own fields are
+        final response = await apiService.patch(
+          '/user-game-entries/collection/${widget.entryId}',
+          {
+            'played': _played,
+            'hoursPlayed': double.tryParse(_hoursController.text) ?? 0,
+            'rating': _rating,
+            'review': _reviewController.text,
+            'platformPlayed': platformPlayed,
+          },
+          token: token,
+        );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (!mounted) return;
+
+        if (response.statusCode != 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ?? data['error'] ?? 'Could not save. Please try again.';
+          });
+          return;
+        }
+
+        // Sync list membership via the dedicated per-list endpoints
+        if (widget.gameId != null) {
+          final added = _selectedListIds.difference(widget.initialListIds);
+          final removed = widget.initialListIds.difference(_selectedListIds);
+          for (final listId in added) {
+            await apiService.post(
+              '/user-game-entries/lists/$listId/games/${widget.gameId}',
+              {},
+              token: token,
+            );
+          }
+          for (final listId in removed) {
+            await apiService.delete(
+              '/user-game-entries/lists/$listId/games/${widget.gameId}',
+              token: token,
+            );
+          }
+        }
+
+        if (!mounted) return;
         Navigator.pop(context, true);
       } else {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _errorMessage =
-              data['message'] ?? data['error'] ?? 'Could not save. Please try again.';
-        });
+        // The entry endpoint needs an already-cached gameId — cache the
+        // RAWG result or create the manual game first if needed
+        String? resolvedGameId = widget.gameId;
+
+        if (resolvedGameId == null && widget.rawgId != null) {
+          final cacheResponse = await apiService.post(
+            '/games/rawg/${widget.rawgId}',
+            {},
+            token: token,
+          );
+          if (cacheResponse.statusCode != 200) {
+            if (!mounted) return;
+            setState(() {
+              _errorMessage = 'Could not save this game. Please try again.';
+            });
+            return;
+          }
+          final cacheData = jsonDecode(cacheResponse.body);
+          resolvedGameId = cacheData['game']?['_id']?.toString();
+        } else if (resolvedGameId == null && widget.newGame != null) {
+          final manualResponse = await apiService.post(
+            '/games/manual',
+            widget.newGame!,
+            token: token,
+          );
+          if (manualResponse.statusCode != 201) {
+            if (!mounted) return;
+            setState(() {
+              _errorMessage = 'Could not save this game. Please try again.';
+            });
+            return;
+          }
+          final manualData = jsonDecode(manualResponse.body);
+          resolvedGameId = manualData['game']?['_id']?.toString();
+        }
+
+        if (resolvedGameId == null) {
+          if (!mounted) return;
+          setState(() {
+            _errorMessage = 'Could not identify this game. Please try again.';
+          });
+          return;
+        }
+
+        final response = await apiService.post(
+          '/user-game-entries',
+          {
+            'gameId': resolvedGameId,
+            'listIds': _selectedListIds.toList(),
+            'played': _played,
+            'hoursPlayed': double.tryParse(_hoursController.text) ?? 0,
+            'rating': _rating,
+            'review': _reviewController.text,
+            'platformPlayed': platformPlayed,
+          },
+          token: token,
+        );
+
+        if (!mounted) return;
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          Navigator.pop(context, true);
+        } else {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ?? data['error'] ?? 'Could not save. Please try again.';
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Something went wrong. Please try again.';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Something went wrong. Please try again.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {

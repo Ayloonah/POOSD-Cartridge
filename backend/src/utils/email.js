@@ -10,7 +10,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
  */
 
 const sendVerificationEmail = async (userEmail, token) => {
-    const verifiedSender = 'no-reply@cartridgeapp.fun'; 
+    const verifiedSender =  process.env.SENDGRID_FROM_EMAIL?.trim().toLowerCase();
     
     const verificationLink = `${process.env.APP_BASE_URL}/verify-email?token=${token}`;
 
@@ -33,7 +33,7 @@ const sendVerificationEmail = async (userEmail, token) => {
 
 // Function that handles password resets
 const sendPasswordResetEmail = async (userEmail, token) => {
-    const verifiedSender = 'cartridge.app@gmail.com'; 
+    const verifiedSender =   process.env.SENDGRID_FROM_EMAIL?.trim().toLowerCase(); 
 
     const resetLink = `${process.env.APP_BASE_URL}/reset-password?token=${token}`;
     
