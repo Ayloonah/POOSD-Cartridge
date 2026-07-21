@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const List = require("../models/list");
 const Game = require("../models/games");
 const GameUserEntry = require("../models/gameUserEntry");
-const gameSummaryFields =  "_id name coverImage genres releaseDate developers";
+const gameSummaryFields =  "_id name coverImage genres platforms releaseDate developers";
 const gameFields = "name coverImage genres releaseDate developers";
 const entryFields = "_id gameId listIds played hoursPlayed rating review platformPlayed createdAt updatedAt";
 const validIds = (...ids) => {
