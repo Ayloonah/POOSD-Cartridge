@@ -8,6 +8,7 @@ import '../models/collection_filters.dart';
 import '../widgets/game_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../widgets/filter_bottom_sheet.dart';
+import '../utils/api_normalize.dart';
 import 'game_detail_screen.dart';
 import 'add_game_screen.dart';
 
@@ -80,16 +81,21 @@ class _CollectionScreenState extends State<CollectionScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
 
-      final entriesResponse = await apiService.get('/gameuserentries', token: token);
+      final entriesResponse =
+          await apiService.get('/user-game-entries/collection', token: token);
       final listsResponse = await apiService.get('/lists', token: token);
 
       if (!mounted) return;
 
       final entries = entriesResponse.statusCode == 200
           ? List<Map<String, dynamic>>.from(jsonDecode(entriesResponse.body))
+              .map(normalizeEntry)
+              .toList()
           : <Map<String, dynamic>>[];
       final lists = listsResponse.statusCode == 200
           ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
+              .map(normalizeList)
+              .toList()
           : <Map<String, dynamic>>[];
 
       setState(() {
@@ -137,7 +143,9 @@ class _CollectionScreenState extends State<CollectionScreen> {
         }
       }
       if (_filters.developers.isNotEmpty) {
-        if (!_filters.developers.contains(entry['developer'])) return false;
+        final entryDevelopers =
+            (entry['developers'] as List?)?.map((d) => d.toString()).toSet() ?? {};
+        if (entryDevelopers.intersection(_filters.developers).isEmpty) return false;
       }
       if (_filters.genres.isNotEmpty) {
         final entryGenres =
@@ -165,16 +173,6 @@ class _CollectionScreenState extends State<CollectionScreen> {
     });
 
     _filteredSortedEntries = result;
-  }
-
-  // Distinct, sorted values for a flat string field (e.g. developer)
-  List<String> _distinctValues(String key) {
-    final values = <String>{};
-    for (final entry in _allEntries) {
-      final value = entry[key];
-      if (value != null && value.toString().isNotEmpty) values.add(value.toString());
-    }
-    return values.toList()..sort();
   }
 
   // Distinct, sorted values for a list-of-strings field (e.g. genres)
@@ -240,7 +238,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
       builder: (context) => FilterBottomSheet(
         current: _filters,
         availableLists: _availableLists,
-        availableDevelopers: _distinctValues('developer'),
+        availableDevelopers: _distinctListValues('developers'),
         availableGenres: _distinctListValues('genres'),
         minReleaseYear: minYear,
         maxReleaseYear: maxYear,
