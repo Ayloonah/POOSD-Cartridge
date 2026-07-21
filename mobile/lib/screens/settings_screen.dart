@@ -441,11 +441,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.roboto()),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete', style: GoogleFonts.roboto()),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
         ],
       ),

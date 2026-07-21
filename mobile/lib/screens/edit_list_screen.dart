@@ -154,18 +154,25 @@ class _EditListScreenState extends State<EditListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete List?'),
+        title: Text('Delete List?', style: GoogleFonts.roboto()),
         content: Text(
           'This will delete "${widget.list['name']}". Games stay in your collection.',
+          style: GoogleFonts.roboto(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
         ],
       ),
