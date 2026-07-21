@@ -37,8 +37,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
   CollectionSortOption _sortOption = CollectionSortOption.dateAddedNewest;
   CollectionFilters _filters = const CollectionFilters();
+  String _searchQuery = '';
 
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -54,7 +56,16 @@ class _CollectionScreenState extends State<CollectionScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _visibleCount = _pageSize;
+      _applySortAndFilter();
+    });
   }
 
   // Reveal 10 more cards once the user nears the bottom of the grid
@@ -63,8 +74,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
         _scrollController.position.maxScrollExtent - 200) {
       if (_visibleCount < _filteredSortedEntries.length) {
         setState(() {
-          _visibleCount =
-              (_visibleCount + _pageSize).clamp(0, _filteredSortedEntries.length);
+          _visibleCount = (_visibleCount + _pageSize).clamp(
+            0,
+            _filteredSortedEntries.length,
+          );
         });
       }
     }
@@ -81,27 +94,32 @@ class _CollectionScreenState extends State<CollectionScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
 
-      final entriesResponse =
-          await apiService.get('/user-game-entries/collection', token: token);
+      final entriesResponse = await apiService.get(
+        '/user-game-entries/collection',
+        token: token,
+      );
       final listsResponse = await apiService.get('/lists', token: token);
 
       if (!mounted) return;
 
       final entries = entriesResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(entriesResponse.body))
-              .map(normalizeEntry)
-              .toList()
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(entriesResponse.body),
+            ).map(normalizeEntry).toList()
           : <Map<String, dynamic>>[];
       final lists = listsResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
-              .map(normalizeList)
-              .toList()
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(listsResponse.body),
+            ).map(normalizeList).toList()
           : <Map<String, dynamic>>[];
 
       setState(() {
         _allEntries = entries;
         _availableLists = lists
-            .map((list) => MapEntry(list['listId'].toString(), list['name'].toString()))
+            .map(
+              (list) =>
+                  MapEntry(list['listId'].toString(), list['name'].toString()),
+            )
             .toList();
         _visibleCount = _pageSize;
         _applySortAndFilter();
@@ -124,9 +142,15 @@ class _CollectionScreenState extends State<CollectionScreen> {
   // Recomputes the visible list from _allEntries based on current filters + sort
   void _applySortAndFilter() {
     final result = _allEntries.where((entry) {
+      final query = _searchQuery.trim().toLowerCase();
+      if (query.isNotEmpty) {
+        final name = (entry['name'] ?? '').toString().toLowerCase();
+        if (!name.contains(query)) return false;
+      }
       if (_filters.listIds.isNotEmpty) {
         final entryListIds =
-            (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ?? {};
+            (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ??
+            {};
         if (entryListIds.intersection(_filters.listIds).isEmpty) return false;
       }
       if (_filters.playedFilter != null) {
@@ -144,8 +168,11 @@ class _CollectionScreenState extends State<CollectionScreen> {
       }
       if (_filters.developers.isNotEmpty) {
         final entryDevelopers =
-            (entry['developers'] as List?)?.map((d) => d.toString()).toSet() ?? {};
-        if (entryDevelopers.intersection(_filters.developers).isEmpty) return false;
+            (entry['developers'] as List?)?.map((d) => d.toString()).toSet() ??
+            {};
+        if (entryDevelopers.intersection(_filters.developers).isEmpty) {
+          return false;
+        }
       }
       if (_filters.genres.isNotEmpty) {
         final entryGenres =
@@ -158,17 +185,29 @@ class _CollectionScreenState extends State<CollectionScreen> {
     result.sort((a, b) {
       switch (_sortOption) {
         case CollectionSortOption.dateAddedNewest:
-          return DateTime.parse(b['createdAt']).compareTo(DateTime.parse(a['createdAt']));
+          return DateTime.parse(
+            b['createdAt'],
+          ).compareTo(DateTime.parse(a['createdAt']));
         case CollectionSortOption.dateAddedOldest:
-          return DateTime.parse(a['createdAt']).compareTo(DateTime.parse(b['createdAt']));
+          return DateTime.parse(
+            a['createdAt'],
+          ).compareTo(DateTime.parse(b['createdAt']));
         case CollectionSortOption.titleAZ:
-          return (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString());
+          return (a['name'] ?? '').toString().compareTo(
+            (b['name'] ?? '').toString(),
+          );
         case CollectionSortOption.titleZA:
-          return (b['name'] ?? '').toString().compareTo((a['name'] ?? '').toString());
+          return (b['name'] ?? '').toString().compareTo(
+            (a['name'] ?? '').toString(),
+          );
         case CollectionSortOption.ratingHighToLow:
-          return ((b['rating'] ?? 0) as num).compareTo((a['rating'] ?? 0) as num);
+          return ((b['rating'] ?? 0) as num).compareTo(
+            (a['rating'] ?? 0) as num,
+          );
         case CollectionSortOption.ratingLowToHigh:
-          return ((a['rating'] ?? 0) as num).compareTo((b['rating'] ?? 0) as num);
+          return ((a['rating'] ?? 0) as num).compareTo(
+            (b['rating'] ?? 0) as num,
+          );
       }
     });
 
@@ -258,7 +297,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
   Widget build(BuildContext context) {
     final visible = _filteredSortedEntries.take(_visibleCount).toList();
     final reachedEnd =
-        _visibleCount >= _filteredSortedEntries.length && _filteredSortedEntries.isNotEmpty;
+        _visibleCount >= _filteredSortedEntries.length &&
+        _filteredSortedEntries.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -283,110 +323,162 @@ class _CollectionScreenState extends State<CollectionScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadCollection,
-              child: _allEntries.isEmpty
-                  ? ListView(
-                      children: [
-                        if (_errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                const Text('No games in your collection yet.'),
-                                const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: _openAddGame,
-                                  child: const Text('Add a Game'),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Search your collection',
+                isDense: true,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _onSearchChanged('');
+                        },
+                      ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _loadCollection,
+                    child: _allEntries.isEmpty
+                        ? ListView(
+                            children: [
+                              if (_errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                          sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.65,
-                            ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final entry = visible[index];
-                                return GameCard(
-                                  title: entry['name']?.toString() ?? '',
-                                  imageUrl: entry['coverImage']?.toString(),
-                                  rating: (entry['rating'] as num?)?.toDouble(),
-                                  platformPlayed: entry['platformPlayed']?.toString(),
-                                  hoursPlayed: (entry['hoursPlayed'] as num?)?.toDouble(),
-                                  onTap: () async {
-                                    final result = await Navigator.push<Object?>(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => GameDetailScreen(
-                                          entry: entry,
-                                          availableLists: _availableLists,
-                                        ),
+                              Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'No games in your collection yet.',
                                       ),
-                                    );
-                                    if (result is Map<String, dynamic>) {
-                                      // Edited: patch just this entry instead of
-                                      // reloading the whole collection.
-                                      setState(() {
-                                        final index = _allEntries.indexWhere((e) =>
-                                            e['entryId']?.toString() ==
-                                            result['entryId']?.toString());
-                                        if (index != -1) {
-                                          _allEntries[index] = result;
-                                        }
-                                        _applySortAndFilter();
-                                      });
-                                    } else if (result == true) {
-                                      // Deleted, or the single-entry refresh
-                                      // failed — fall back to a full reload.
-                                      _loadCollection();
-                                    }
-                                  },
-                                );
-                              },
-                              childCount: visible.length,
-                            ),
-                          ),
-                        ),
-                        if (reachedEnd)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: Center(
-                                child: Text(
-                                  "You've reached the end of your collection.",
-                                  style: TextStyle(color: Colors.grey),
+                                      const SizedBox(height: 12),
+                                      ElevatedButton(
+                                        onPressed: _openAddGame,
+                                        child: const Text('Add a Game'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
+                          )
+                        : CustomScrollView(
+                            controller: _scrollController,
+                            slivers: [
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  12,
+                                  12,
+                                  0,
+                                ),
+                                sliver: SliverGrid(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 12,
+                                        crossAxisSpacing: 12,
+                                        childAspectRatio: 0.65,
+                                      ),
+                                  delegate: SliverChildBuilderDelegate((
+                                    context,
+                                    index,
+                                  ) {
+                                    final entry = visible[index];
+                                    return GameCard(
+                                      title: entry['name']?.toString() ?? '',
+                                      imageUrl: entry['coverImage']?.toString(),
+                                      rating: (entry['rating'] as num?)
+                                          ?.toDouble(),
+                                      platformPlayed: entry['platformPlayed']
+                                          ?.toString(),
+                                      hoursPlayed:
+                                          (entry['hoursPlayed'] as num?)
+                                              ?.toDouble(),
+                                      onTap: () async {
+                                        final result =
+                                            await Navigator.push<Object?>(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    GameDetailScreen(
+                                                      entry: entry,
+                                                      availableLists:
+                                                          _availableLists,
+                                                    ),
+                                              ),
+                                            );
+                                        if (result is Map<String, dynamic>) {
+                                          // Edited: patch just this entry instead of
+                                          // reloading the whole collection.
+                                          setState(() {
+                                            final index = _allEntries
+                                                .indexWhere(
+                                                  (e) =>
+                                                      e['entryId']
+                                                          ?.toString() ==
+                                                      result['entryId']
+                                                          ?.toString(),
+                                                );
+                                            if (index != -1) {
+                                              _allEntries[index] = result;
+                                            }
+                                            _applySortAndFilter();
+                                          });
+                                        } else if (result == true) {
+                                          // Deleted, or the single-entry refresh
+                                          // failed — fall back to a full reload.
+                                          _loadCollection();
+                                        }
+                                      },
+                                    );
+                                  }, childCount: visible.length),
+                                ),
+                              ),
+                              if (reachedEnd)
+                                const SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(24.0),
+                                    child: Center(
+                                      child: Text(
+                                        "You've reached the end of your collection.",
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // Clearance so the FABs don't sit on top of the last row
+                              const SliverToBoxAdapter(
+                                child: SizedBox(height: 72),
+                              ),
+                            ],
                           ),
-                        // Clearance so the FABs don't sit on top of the last row
-                        const SliverToBoxAdapter(child: SizedBox(height: 72)),
-                      ],
-                    ),
-            ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

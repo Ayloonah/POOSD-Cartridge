@@ -16,10 +16,10 @@ class ListsScreen extends StatefulWidget {
   const ListsScreen({super.key});
 
   @override
-  State<ListsScreen> createState() => _ListsScreenState();
+  State<ListsScreen> createState() => ListsScreenState();
 }
 
-class _ListsScreenState extends State<ListsScreen> {
+class ListsScreenState extends State<ListsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -33,6 +33,10 @@ class _ListsScreenState extends State<ListsScreen> {
     super.initState();
     _loadLists();
   }
+
+  // Called by MainNavScreen when this tab is (re)selected — see the same
+  // note on HomeScreenState.refresh() for why this is necessary.
+  Future<void> refresh() => _loadLists();
 
   // Fetch the user's lists and their collection (the latter is needed for
   // the create/edit list flows' game checklists)
