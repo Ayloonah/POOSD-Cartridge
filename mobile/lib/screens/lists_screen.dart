@@ -301,8 +301,18 @@ class ListsScreenState extends State<ListsScreen> {
                                       const Text('No lists yet.'),
                                       const SizedBox(height: 12),
                                       ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.darkGreen,
+                                          foregroundColor: AppColors.textLight,
+                                        ),
                                         onPressed: _openCreateList,
-                                        child: const Text('New List'),
+                                        child: Text(
+                                          'New List',
+                                          style: GoogleFonts.roboto(
+                                            color: AppColors.textLight,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),

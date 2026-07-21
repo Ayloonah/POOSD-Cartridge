@@ -49,7 +49,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
       ),
       const CollectionScreen(),
       ListsScreen(key: _listsKey),
-      const SettingsScreen(),
+      SettingsScreen(onGoBack: () => _goToTab(0)),
     ];
 
     return Scaffold(
