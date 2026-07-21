@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
 import '../widgets/cover_card.dart';
+import '../widgets/game_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onSeeAllGames;
@@ -145,8 +146,15 @@ class HomeScreenState extends State<HomeScreen> {
                     emptyMessage: 'No games yet.',
                     emptyButtonLabel: 'Add a Game',
                     onEmptyButtonPressed: widget.onSeeAllGames,
-                    nameKey: 'name',
-                    imageKey: 'coverImage',
+                    cardBuilder: (item) => GameCard(
+                      title: item['name']?.toString() ?? '',
+                      imageUrl: item['coverImage']?.toString(),
+                      rating: (item['rating'] as num?)?.toDouble(),
+                      platformPlayed: item['platformPlayed']?.toString(),
+                      hoursPlayed: (item['hoursPlayed'] as num?)?.toDouble(),
+                      width: 138,
+                      height: 212,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildSection(
@@ -156,8 +164,10 @@ class HomeScreenState extends State<HomeScreen> {
                     emptyMessage: 'No lists yet.',
                     emptyButtonLabel: 'Add a List',
                     onEmptyButtonPressed: widget.onSeeAllLists,
-                    nameKey: 'name',
-                    imageKey: 'coverImage',
+                    cardBuilder: (item) => CoverCard(
+                      title: item['name']?.toString() ?? '',
+                      imageUrl: item['coverImage']?.toString(),
+                    ),
                   ),
                 ],
               ),
@@ -174,8 +184,7 @@ class HomeScreenState extends State<HomeScreen> {
     required String emptyMessage,
     required String emptyButtonLabel,
     required VoidCallback onEmptyButtonPressed,
-    required String nameKey,
-    required String imageKey,
+    required Widget Function(Map<String, dynamic> item) cardBuilder,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,10 +240,7 @@ class HomeScreenState extends State<HomeScreen> {
               separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final item = items[index] as Map<String, dynamic>;
-                return CoverCard(
-                  title: item[nameKey]?.toString() ?? '',
-                  imageUrl: item[imageKey]?.toString(),
-                );
+                return cardBuilder(item);
               },
             ),
           ),

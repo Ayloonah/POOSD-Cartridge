@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../models/collection_sort_option.dart';
@@ -292,6 +294,36 @@ class _CollectionScreenState extends State<CollectionScreen> {
     }
   }
 
+  // A light-green pill button used for Add Game / Sort / Filter, matching
+  // the app's dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
   // Screen contents
   @override
   Widget build(BuildContext context) {
@@ -301,52 +333,93 @@ class _CollectionScreenState extends State<CollectionScreen> {
         _filteredSortedEntries.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title ?? 'Collection'),
-        actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _openAddGame),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'sortFab',
-            onPressed: _openSortSheet,
-            child: const Icon(Icons.sort),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
           ),
-          const SizedBox(width: 12),
-          FloatingActionButton.small(
-            heroTag: 'filterFab',
-            onPressed: _openFilterSheet,
-            child: const Icon(Icons.filter_list),
-          ),
-        ],
+        ),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search your collection',
-                isDense: true,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
+          Container(
+            color: AppColors.darkGreen,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    decoration: InputDecoration(
+                      hintText: 'Search your collection',
+                      hintStyle: GoogleFonts.roboto(
+                        color: AppColors.darkGreen.withOpacity(0.6),
                       ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.lightGreen,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: AppColors.darkGreen,
+                      ),
+                      suffixIcon: _searchQuery.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                color: AppColors.darkGreen,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged('');
+                              },
+                            ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      _actionButton(
+                        icon: Icons.add,
+                        label: 'Add Game',
+                        onPressed: _openAddGame,
+                      ),
+                      const SizedBox(width: 8),
+                      _actionButton(
+                        icon: Icons.sort,
+                        label: 'Sort',
+                        onPressed: _openSortSheet,
+                      ),
+                      const SizedBox(width: 8),
+                      _actionButton(
+                        icon: Icons.filter_list,
+                        label: 'Filter',
+                        onPressed: _openFilterSheet,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -362,7 +435,9 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                   padding: const EdgeInsets.all(16.0),
                                   child: Text(
                                     _errorMessage!,
-                                    style: const TextStyle(color: Colors.red),
+                                    style: GoogleFonts.roboto(
+                                      color: Colors.red,
+                                    ),
                                   ),
                                 ),
                               Padding(
@@ -370,13 +445,21 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                 child: Center(
                                   child: Column(
                                     children: [
-                                      const Text(
+                                      Text(
                                         'No games in your collection yet.',
+                                        style: GoogleFonts.roboto(),
                                       ),
                                       const SizedBox(height: 12),
                                       ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.lightGreen,
+                                          foregroundColor: AppColors.darkGreen,
+                                        ),
                                         onPressed: _openAddGame,
-                                        child: const Text('Add a Game'),
+                                        child: Text(
+                                          'Add a Game',
+                                          style: GoogleFonts.roboto(),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -458,20 +541,22 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                 ),
                               ),
                               if (reachedEnd)
-                                const SliverToBoxAdapter(
+                                SliverToBoxAdapter(
                                   child: Padding(
-                                    padding: EdgeInsets.all(24.0),
+                                    padding: const EdgeInsets.all(24.0),
                                     child: Center(
                                       child: Text(
                                         "You've reached the end of your collection.",
-                                        style: TextStyle(color: Colors.grey),
+                                        style: GoogleFonts.roboto(
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              // Clearance so the FABs don't sit on top of the last row
+                              // Bottom clearance now that FABs are gone
                               const SliverToBoxAdapter(
-                                child: SizedBox(height: 72),
+                                child: SizedBox(height: 24),
                               ),
                             ],
                           ),

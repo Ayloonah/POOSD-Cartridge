@@ -9,6 +9,10 @@ class GameCard extends StatelessWidget {
   final String? platformPlayed;
   final double? hoursPlayed;
   final VoidCallback? onTap;
+  // Set both for use outside a grid (e.g. a fixed-size horizontal list),
+  // since the card's Expanded image needs a bounded height to lay out.
+  final double? width;
+  final double? height;
 
   const GameCard({
     super.key,
@@ -18,10 +22,19 @@ class GameCard extends StatelessWidget {
     this.platformPlayed,
     this.hoursPlayed,
     this.onTap,
+    this.width,
+    this.height,
   });
 
   @override
   Widget build(BuildContext context) {
+    final card = _buildCard();
+    return (width == null && height == null)
+        ? card
+        : SizedBox(width: width, height: height, child: card);
+  }
+
+  Widget _buildCard() {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -29,8 +42,7 @@ class GameCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 3 / 4,
+            Expanded(
               child: (imageUrl == null || imageUrl!.isEmpty)
                   ? Container(
                       color: Colors.grey[300],
@@ -39,6 +51,7 @@ class GameCard extends StatelessWidget {
                   : Image.network(
                       imageUrl!,
                       fit: BoxFit.cover,
+                      width: double.infinity,
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: Colors.grey[300],
                         child: const Icon(Icons.image_not_supported),
