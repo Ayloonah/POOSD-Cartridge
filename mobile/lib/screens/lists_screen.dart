@@ -7,6 +7,7 @@ import '../models/list_sort_option.dart';
 import '../models/collection_filters.dart';
 import '../widgets/list_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
+import '../utils/api_normalize.dart';
 import 'collection_screen.dart';
 import 'create_list_screen.dart';
 import 'edit_list_screen.dart';
@@ -46,16 +47,21 @@ class _ListsScreenState extends State<ListsScreen> {
       final apiService = ApiService();
 
       final listsResponse = await apiService.get('/lists', token: token);
-      final entriesResponse = await apiService.get('/gameuserentries', token: token);
+      final entriesResponse =
+          await apiService.get('/user-game-entries/collection', token: token);
 
       if (!mounted) return;
 
       setState(() {
         _lists = listsResponse.statusCode == 200
             ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
+                .map(normalizeList)
+                .toList()
             : [];
         _collectionEntries = entriesResponse.statusCode == 200
             ? List<Map<String, dynamic>>.from(jsonDecode(entriesResponse.body))
+                .map(normalizeEntry)
+                .toList()
             : [];
         _sortLists();
       });
