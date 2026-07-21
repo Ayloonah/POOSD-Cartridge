@@ -337,7 +337,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                   platformPlayed: entry['platformPlayed']?.toString(),
                                   hoursPlayed: (entry['hoursPlayed'] as num?)?.toDouble(),
                                   onTap: () async {
-                                    final changed = await Navigator.push<bool>(
+                                    final result = await Navigator.push<Object?>(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => GameDetailScreen(
@@ -346,7 +346,21 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                         ),
                                       ),
                                     );
-                                    if (changed == true) {
+                                    if (result is Map<String, dynamic>) {
+                                      // Edited: patch just this entry instead of
+                                      // reloading the whole collection.
+                                      setState(() {
+                                        final index = _allEntries.indexWhere((e) =>
+                                            e['entryId']?.toString() ==
+                                            result['entryId']?.toString());
+                                        if (index != -1) {
+                                          _allEntries[index] = result;
+                                        }
+                                        _applySortAndFilter();
+                                      });
+                                    } else if (result == true) {
+                                      // Deleted, or the single-entry refresh
+                                      // failed — fall back to a full reload.
                                       _loadCollection();
                                     }
                                   },
