@@ -65,7 +65,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
       'genres': _splitCommaList(_genresController.text),
       'platforms': platforms,
       'releaseDate': _releaseDate?.toIso8601String(),
-      'developer': developer.isEmpty ? null : developer,
+      'developers': developer.isEmpty ? <String>[] : [developer],
     };
 
     Navigator.push(

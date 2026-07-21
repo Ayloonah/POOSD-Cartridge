@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
+import '../utils/api_normalize.dart';
 import '../widgets/cover_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final apiService = ApiService();
 
       final gamesResponse = await apiService.get(
-        '/gameuserentries',
+        '/user-game-entries/collection',
         token: token,
       );
       final listsResponse = await apiService.get('/lists', token: token);
@@ -55,6 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final gameEntries = gamesResponse.statusCode == 200
           ? List<Map<String, dynamic>>.from(jsonDecode(gamesResponse.body))
+              .map(normalizeEntry)
+              .toList()
           : <Map<String, dynamic>>[];
       final lists = listsResponse.statusCode == 200
           ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))

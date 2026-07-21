@@ -35,6 +35,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       MaterialPageRoute(
         builder: (context) => GameEntryFormScreen(
           entryId: entry['entryId']?.toString(),
+          gameId: entry['gameId']?.toString(),
           gameName: entry['name']?.toString() ?? '',
           gameCoverImage: entry['coverImage']?.toString(),
           platforms: platforms,
@@ -82,7 +83,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
       final response = await apiService.delete(
-        '/gameuserentries/${widget.entry['entryId']}',
+        '/user-game-entries/${widget.entry['entryId']}',
         token: token,
       );
 
@@ -134,6 +135,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final rating = (entry['rating'] as num?)?.toDouble();
     final hoursPlayed = (entry['hoursPlayed'] as num?)?.toDouble();
     final genres = (entry['genres'] as List?)?.map((g) => g.toString()).toList() ?? [];
+    final developers = (entry['developers'] as List?)?.map((d) => d.toString()).toList() ?? [];
     final listIds = (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ?? {};
     final listNames = widget.availableLists
         .where((list) => listIds.contains(list.key))
@@ -214,10 +216,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Text('Genres: ${genres.join(', ')}'),
                   ),
-                if (entry['developer'] != null && entry['developer'].toString().isNotEmpty)
+                if (developers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text('Developer: ${entry['developer']}'),
+                    child: Text(
+                      '${developers.length > 1 ? "Developers" : "Developer"}: ${developers.join(', ')}',
+                    ),
                   ),
                 if (entry['releaseDate'] != null)
                   Padding(
