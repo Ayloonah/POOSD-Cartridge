@@ -6,11 +6,12 @@ const{
     createList,
     getUserLists,
     deleteList,
-    updateListName
+    updateList
 } = require("../controllers/listController");
 router.use(authenticateToken);
 router.post("/", createList);
 router.get("/", getUserLists);
 router.delete("/:listId", deleteList);
-router.patch("/:listId",updateListName);
+router.patch("/:listId", updateList);
+router.put("/:listId", updateList);
 module.exports = router;
