@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
+import '../utils/api_normalize.dart';
 import 'game_entry_form_screen.dart';
 
 // Shows everything about one collection entry, and lets the user edit or
 // delete it. Reuses the entry data already fetched by the Collection screen
-// rather than re-fetching it here.
+// rather than re-fetching it on open — but after an edit, re-fetches just
+// this entry so the Collection screen can patch it in place instead of
+// reloading the whole collection.
 class GameDetailScreen extends StatefulWidget {
   final Map<String, dynamic> entry;
   final List<MapEntry<String, String>> availableLists;
@@ -50,10 +54,29 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       ),
     );
 
-    // Bubble the "something changed" signal back to the Collection screen
-    if (saved == true && mounted) {
-      Navigator.pop(context, true);
+    if (saved != true || !mounted) return;
+
+    // Fetch just this entry so the Collection screen can patch it in place
+    // rather than reloading the whole collection. Falls back to signaling a
+    // full reload if the single-entry fetch fails for any reason.
+    Map<String, dynamic>? updatedEntry;
+    final entryId = entry['entryId']?.toString();
+    if (entryId != null) {
+      try {
+        final token = Provider.of<AuthState>(context, listen: false).token;
+        final apiService = ApiService();
+        final response =
+            await apiService.get('/user-game-entries/collection/$entryId', token: token);
+        if (response.statusCode == 200) {
+          updatedEntry = normalizeEntry(jsonDecode(response.body));
+        }
+      } catch (e) {
+        // Fall through — Collection screen will do a full reload instead.
+      }
     }
+
+    if (!mounted) return;
+    Navigator.pop(context, updatedEntry ?? true);
   }
 
   Future<void> _handleDelete() async {
