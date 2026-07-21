@@ -424,7 +424,11 @@ class _CollectionScreenState extends State<CollectionScreen> {
           ),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.lightGreen,
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _loadCollection,
                     child: _allEntries.isEmpty

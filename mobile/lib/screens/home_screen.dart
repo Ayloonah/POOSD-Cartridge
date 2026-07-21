@@ -6,8 +6,8 @@ import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
-import '../widgets/cover_card.dart';
 import '../widgets/game_card.dart';
+import '../widgets/list_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onSeeAllGames;
@@ -26,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
+  List<Map<String, dynamic>> _collectionEntries = [];
   List<dynamic> _recentGames = [];
   List<dynamic> _recentLists = [];
 
@@ -62,12 +63,14 @@ class HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       final gameEntries = gamesResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(gamesResponse.body))
-              .map(normalizeEntry)
-              .toList()
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(gamesResponse.body),
+            ).map(normalizeEntry).toList()
           : <Map<String, dynamic>>[];
       final lists = listsResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(listsResponse.body),
+            ).map(normalizeList).toList()
           : <Map<String, dynamic>>[];
 
       // Most recently added games / updated lists first
@@ -83,6 +86,7 @@ class HomeScreenState extends State<HomeScreen> {
       );
 
       setState(() {
+        _collectionEntries = gameEntries;
         _recentGames = gameEntries.take(5).toList();
         _recentLists = lists.take(5).toList();
       });
@@ -99,6 +103,21 @@ class HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  // The 4 most recently added games in this list, for the card's cover grid
+  List<String?> _recentCoverImages(String listId) {
+    final entries = _collectionEntries.where((entry) {
+      final listIds =
+          (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ?? {};
+      return listIds.contains(listId);
+    }).toList();
+    entries.sort(
+      (a, b) => DateTime.parse(
+        b['createdAt'],
+      ).compareTo(DateTime.parse(a['createdAt'])),
+    );
+    return entries.take(4).map((e) => e['coverImage']?.toString()).toList();
   }
 
   // Screen contents
@@ -125,7 +144,9 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.lightGreen),
+            )
           : RefreshIndicator(
               onRefresh: _loadDashboardData,
               child: ListView(
@@ -164,9 +185,15 @@ class HomeScreenState extends State<HomeScreen> {
                     emptyMessage: 'No lists yet.',
                     emptyButtonLabel: 'Add a List',
                     onEmptyButtonPressed: widget.onSeeAllLists,
-                    cardBuilder: (item) => CoverCard(
-                      title: item['name']?.toString() ?? '',
-                      imageUrl: item['coverImage']?.toString(),
+                    cardBuilder: (item) => SizedBox(
+                      width: 138,
+                      height: 212,
+                      child: ListCard(
+                        title: item['name']?.toString() ?? '',
+                        coverImages: _recentCoverImages(
+                          item['listId'].toString(),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -202,9 +229,19 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             TextButton(
               onPressed: onSeeAll,
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.lightGreen,
+                foregroundColor: AppColors.darkGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: Text(
                 'See All',
-                style: GoogleFonts.roboto(color: Colors.black),
+                style: GoogleFonts.roboto(
+                  color: AppColors.darkGreen,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
