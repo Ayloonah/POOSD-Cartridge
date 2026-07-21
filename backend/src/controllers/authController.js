@@ -283,7 +283,7 @@ exports.resendEmailVerification = async(req, res) => {
         
         // json return is affirmative for security concerns
         if (!user) {
-            return res.status(404).json({ message: "Email verification link sent." })
+            return res.status(200).json({ message: "Email verification link sent." })
         }
 
         if (user.isVerified) {
@@ -325,7 +325,8 @@ exports.me = async (req, res) => {
             profilePicture: user.profilePicture,
             username: user.username,
             bio: user.bio,
-            email: user.email
+            email: user.email,
+            pendingEmail: user.pendingEmail || null
         })
 
     } catch(err) {
@@ -349,7 +350,7 @@ exports.checkUsername = async (req, res) => {
 
         if (existingUser) {
             if (currentUserId && existingUser._id.toString() === currentUserId) {
-                return res.status(400).json({ 
+                return res.status(200).json({ 
                     available: true
                 });
             }
