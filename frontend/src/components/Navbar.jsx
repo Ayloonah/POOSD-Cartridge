@@ -1,15 +1,14 @@
 import React from 'react';
 import Button from './Button';
 
-export default function Navbar() {
+export default function Navbar({ onOpenLogin, onOpenRegister }) {
   return (
     <nav style={{ 
       backgroundColor: '#143910', 
       padding: '24px 48px', 
       display: 'flex', 
       justifyContent: 'space-between', 
-      alignItems: 'center', 
-      borderBottom: '4px solid #000' 
+      alignItems: 'center'
     }}>
       <div className="font-pixel" style={{ 
         color: '#98B910', 
@@ -19,8 +18,8 @@ export default function Navbar() {
         CARTRIDGE
       </div>
       <div style={{ display: 'flex', gap: '16px' }}>
-        <Button variant="tertiary">Sign in</Button>
-        <Button variant="secondary">Register</Button>
+        <Button variant="tertiary" onClick={onOpenLogin}>Sign in</Button>
+        <Button variant="secondary" onClick={onOpenRegister}>Register</Button>
       </div>
     </nav>
   );
