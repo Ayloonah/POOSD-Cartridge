@@ -124,7 +124,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
           throw new Error(data.message || 'Backend rejected the registration.');
         }
 
-        setSuccess('Account created! Please sign in.');
+        setSuccess('Please check your email to confirm your account.');
         setUsername('');
         setPassword('');
         setConfirmPassword('');
