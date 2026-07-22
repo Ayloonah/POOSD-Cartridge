@@ -36,7 +36,7 @@ class ErrorMessage extends StatelessWidget {
           child: Text(
             message,
             textAlign: textAlign,
-            style: GoogleFonts.roboto(
+            style: GoogleFonts.inter(
               color: AppColors.textLight,
               fontWeight: FontWeight.bold,
               fontSize: 13,

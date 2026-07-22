@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug builds get this auto-injected by the Flutter Gradle plugin
+         (for the debug VM service connection), but release builds don't.
+         Required explicitly here for release/demo APKs to make any network
+         calls at all. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Cartridge"
         android:name="${applicationName}"

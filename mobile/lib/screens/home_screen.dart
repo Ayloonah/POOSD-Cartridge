@@ -8,6 +8,11 @@ import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
 import '../widgets/game_card.dart';
 import '../widgets/list_card.dart';
+import '../models/collection_filters.dart';
+import 'add_game_screen.dart';
+import 'create_list_screen.dart';
+import 'collection_screen.dart';
+import 'game_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onSeeAllGames;
@@ -27,6 +32,7 @@ class HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _collectionEntries = [];
+  List<MapEntry<String, String>> _availableLists = [];
   List<dynamic> _recentGames = [];
   List<dynamic> _recentLists = [];
 
@@ -87,6 +93,12 @@ class HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _collectionEntries = gameEntries;
+        _availableLists = lists
+            .map(
+              (list) =>
+                  MapEntry(list['listId'].toString(), list['name'].toString()),
+            )
+            .toList();
         _recentGames = gameEntries.take(5).toList();
         _recentLists = lists.take(5).toList();
       });
@@ -103,6 +115,63 @@ class HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  // Opens the add-game flow directly, rather than just switching to the
+  // Collection tab and leaving the user to find the add button themselves
+  Future<void> _openAddGame() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddGameScreen(availableLists: _availableLists),
+      ),
+    );
+    if (added == true) _loadDashboardData();
+  }
+
+  // Opens the create-list flow directly, rather than just switching to the
+  // Lists tab and leaving the user to find the add button themselves
+  Future<void> _openCreateList() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            CreateListScreen(collectionEntries: _collectionEntries),
+      ),
+    );
+    if (created == true) _loadDashboardData();
+  }
+
+  // Opens a game's detail screen from its card, refreshing the dashboard on
+  // return in case it was edited or removed
+  Future<void> _openGameDetail(Map<String, dynamic> entry) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GameDetailScreen(
+          entry: entry,
+          availableLists: _availableLists,
+        ),
+      ),
+    );
+    if (mounted) _loadDashboardData();
+  }
+
+  // Opens a list's contents from its card, same destination as the Lists
+  // tab's own cards, refreshing the dashboard on return
+  Future<void> _openListContents(Map<String, dynamic> list) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CollectionScreen(
+          title: list['name']?.toString(),
+          initialFilters: CollectionFilters(
+            listIds: {list['listId'].toString()},
+          ),
+        ),
+      ),
+    );
+    if (mounted) _loadDashboardData();
   }
 
   // The 4 most recently added games in this list, for the card's cover grid
@@ -125,7 +194,7 @@ class HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -157,7 +226,7 @@ class HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                        style: GoogleFonts.inter(color: Colors.red),
                       ),
                     ),
                   _buildSection(
@@ -166,7 +235,7 @@ class HomeScreenState extends State<HomeScreen> {
                     items: _recentGames,
                     emptyMessage: 'No games yet.',
                     emptyButtonLabel: 'Add a Game',
-                    onEmptyButtonPressed: widget.onSeeAllGames,
+                    onEmptyButtonPressed: _openAddGame,
                     cardBuilder: (item) => GameCard(
                       title: item['name']?.toString() ?? '',
                       imageUrl: item['coverImage']?.toString(),
@@ -175,6 +244,7 @@ class HomeScreenState extends State<HomeScreen> {
                       hoursPlayed: (item['hoursPlayed'] as num?)?.toDouble(),
                       width: 138,
                       height: 212,
+                      onTap: () => _openGameDetail(item),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -184,7 +254,7 @@ class HomeScreenState extends State<HomeScreen> {
                     items: _recentLists,
                     emptyMessage: 'No lists yet.',
                     emptyButtonLabel: 'Add a List',
-                    onEmptyButtonPressed: widget.onSeeAllLists,
+                    onEmptyButtonPressed: _openCreateList,
                     cardBuilder: (item) => SizedBox(
                       width: 138,
                       height: 212,
@@ -193,6 +263,7 @@ class HomeScreenState extends State<HomeScreen> {
                         coverImages: _recentCoverImages(
                           item['listId'].toString(),
                         ),
+                        onTap: () => _openListContents(item),
                       ),
                     ),
                   ),
@@ -238,7 +309,7 @@ class HomeScreenState extends State<HomeScreen> {
               ),
               child: Text(
                 'See All',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.inter(
                   color: AppColors.darkGreen,
                   fontWeight: FontWeight.w600,
                 ),
@@ -252,7 +323,7 @@ class HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               children: [
-                Text(emptyMessage, style: GoogleFonts.roboto()),
+                Text(emptyMessage, style: GoogleFonts.inter()),
                 const SizedBox(height: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -262,7 +333,7 @@ class HomeScreenState extends State<HomeScreen> {
                   onPressed: onEmptyButtonPressed,
                   child: Text(
                     emptyButtonLabel,
-                    style: GoogleFonts.roboto(color: AppColors.textLight),
+                    style: GoogleFonts.inter(color: AppColors.textLight),
                   ),
                 ),
               ],

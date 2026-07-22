@@ -20,21 +20,57 @@ class _MainNavScreenState extends State<MainNavScreen> {
   int _selectedIndex = 0;
 
   final _homeKey = GlobalKey<HomeScreenState>();
+  final _collectionKey = GlobalKey<CollectionScreenState>();
   final _listsKey = GlobalKey<ListsScreenState>();
+
+  // One Navigator per tab, so screens pushed from within a tab (e.g. Add
+  // Game, Game Detail, Create List) stay confined to that tab's own stack
+  // instead of covering the whole app — which is what keeps this
+  // bottomNavigationBar visible no matter how deep you've navigated.
+  final _homeNavKey = GlobalKey<NavigatorState>();
+  final _collectionNavKey = GlobalKey<NavigatorState>();
+  final _listsNavKey = GlobalKey<NavigatorState>();
+  final _settingsNavKey = GlobalKey<NavigatorState>();
+
+  GlobalKey<NavigatorState> get _currentNavKey {
+    switch (_selectedIndex) {
+      case 0:
+        return _homeNavKey;
+      case 1:
+        return _collectionNavKey;
+      case 2:
+        return _listsNavKey;
+      default:
+        return _settingsNavKey;
+    }
+  }
 
   // Switch the visible tab. Since the IndexedStack below keeps every tab's
   // screen alive rather than rebuilding it, changes made on one tab (e.g.
-  // adding a game while on Collection) wouldn't otherwise be reflected when
-  // switching to Home or Lists — so refresh them here on every reselect.
+  // adding a game from Home) wouldn't otherwise be reflected on the others
+  // — so refresh them here on every reselect.
   void _goToTab(int index) {
     setState(() {
       _selectedIndex = index;
     });
     if (index == 0) {
       _homeKey.currentState?.refresh();
+    } else if (index == 1) {
+      _collectionKey.currentState?.refresh();
     } else if (index == 2) {
       _listsKey.currentState?.refresh();
     }
+  }
+
+  // Wraps a tab's root screen in its own Navigator so pushes from within it
+  // (e.g. tapping into a game's detail screen) stay inside that tab's own
+  // stack, underneath the persistent bottom nav bar.
+  Widget _tabNavigator(GlobalKey<NavigatorState> navKey, Widget rootScreen) {
+    return Navigator(
+      key: navKey,
+      onGenerateRoute: (settings) =>
+          MaterialPageRoute(builder: (context) => rootScreen),
+    );
   }
 
   // Nav shell: bottom nav bar + the four tab screens, kept alive via IndexedStack
@@ -42,70 +78,86 @@ class _MainNavScreenState extends State<MainNavScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      HomeScreen(
-        key: _homeKey,
-        onSeeAllGames: () => _goToTab(1),
-        onSeeAllLists: () => _goToTab(2),
+      _tabNavigator(
+        _homeNavKey,
+        HomeScreen(
+          key: _homeKey,
+          onSeeAllGames: () => _goToTab(1),
+          onSeeAllLists: () => _goToTab(2),
+        ),
       ),
-      const CollectionScreen(),
-      ListsScreen(key: _listsKey),
-      SettingsScreen(onGoBack: () => _goToTab(0)),
+      _tabNavigator(_collectionNavKey, CollectionScreen(key: _collectionKey)),
+      _tabNavigator(_listsNavKey, ListsScreen(key: _listsKey)),
+      _tabNavigator(
+        _settingsNavKey,
+        SettingsScreen(onGoBack: () => _goToTab(0)),
+      ),
     ];
 
-    return Scaffold(
-      body: Column(
-        children: [
-          Consumer<AuthState>(
-            builder: (context, authState, child) {
-              final pendingEmail = authState.pendingEmail;
-              return pendingEmail == null
-                  ? const SizedBox.shrink()
-                  : PendingEmailBanner(pendingEmail: pendingEmail);
-            },
-          ),
-          Expanded(
-            child: IndexedStack(index: _selectedIndex, children: screens),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          backgroundColor: AppColors.darkGreen,
-          indicatorColor: Colors.transparent,
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            return IconThemeData(
-              color: states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : AppColors.lightGreen,
-            );
-          }),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            return GoogleFonts.roboto(
-              color: states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : AppColors.lightGreen,
-              fontWeight: states.contains(WidgetState.selected)
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-              fontSize: 12,
-            );
-          }),
-        ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _goToTab,
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-            NavigationDestination(
-              icon: Icon(Icons.videogame_asset),
-              label: 'Collection',
+    return PopScope(
+      // Only let the system back button close the app once the current
+      // tab's own stack has nothing left to pop; otherwise pop within that
+      // tab first, so the bottom nav bar never gets swept away by it.
+      canPop: !(_currentNavKey.currentState?.canPop() ?? false),
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _currentNavKey.currentState?.pop();
+      },
+      child: Scaffold(
+        body: Column(
+          children: [
+            Consumer<AuthState>(
+              builder: (context, authState, child) {
+                final pendingEmail = authState.pendingEmail;
+                return pendingEmail == null
+                    ? const SizedBox.shrink()
+                    : PendingEmailBanner(pendingEmail: pendingEmail);
+              },
             ),
-            NavigationDestination(icon: Icon(Icons.list), label: 'Lists'),
-            NavigationDestination(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
+            Expanded(
+              child: IndexedStack(index: _selectedIndex, children: screens),
             ),
           ],
+        ),
+        bottomNavigationBar: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            backgroundColor: AppColors.darkGreen,
+            indicatorColor: Colors.transparent,
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              return IconThemeData(
+                color: states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.lightGreen,
+              );
+            }),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              return GoogleFonts.inter(
+                color: states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.lightGreen,
+                fontWeight: states.contains(WidgetState.selected)
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                fontSize: 12,
+              );
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _goToTab,
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+              NavigationDestination(
+                icon: Icon(Icons.videogame_asset),
+                label: 'Collection',
+              ),
+              NavigationDestination(icon: Icon(Icons.list), label: 'Lists'),
+              NavigationDestination(
+                icon: Icon(Icons.settings),
+                label: 'Settings',
+              ),
+            ],
+          ),
         ),
       ),
     );

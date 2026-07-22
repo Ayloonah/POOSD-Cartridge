@@ -196,7 +196,7 @@ class ListsScreenState extends State<ListsScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -218,7 +218,7 @@ class ListsScreenState extends State<ListsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -308,7 +308,7 @@ class ListsScreenState extends State<ListsScreen> {
                                         onPressed: _openCreateList,
                                         child: Text(
                                           'New List',
-                                          style: GoogleFonts.roboto(
+                                          style: GoogleFonts.inter(
                                             color: AppColors.textLight,
                                             fontWeight: FontWeight.w600,
                                           ),

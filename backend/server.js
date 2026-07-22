@@ -7,7 +7,11 @@ const listRoutes = require("./src/routes/listRoutes");
 const gameRoutes = require("./src/routes/gameRoutes");
 const userGameEntryRoutes = require("./src/routes/userGameEntryRoutes");
 const app = express();
-app.use(cors());
+// exposedHeaders: browsers hide all but a small default set of response
+// headers from JS unless explicitly listed here — needed so the Flutter
+// web build can read the sliding-session refreshed token (native mobile
+// isn't subject to this restriction, but web is).
+app.use(cors({ exposedHeaders: ['X-Refreshed-Token'] }));
 // Allows your backend to read JSON request bodies
 app.use(express.json());
 
