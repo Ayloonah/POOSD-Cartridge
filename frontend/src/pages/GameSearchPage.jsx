@@ -29,7 +29,7 @@ const GameSearchPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalFormData, setModalFormData] = useState(null);
 
-  // Helper function to extract developer display string
+ 
   const getDeveloperDisplay = (game) => {
     if (game.developer) return game.developer;
     if (Array.isArray(game.developers) && game.developers.length > 0) {
@@ -38,7 +38,7 @@ const GameSearchPage = () => {
     return '';
   };
 
-  // Helper function to extract genre display string (limits to top 3 for clean card height)
+
   const getGenreDisplay = (game) => {
     if (Array.isArray(game.genres) && game.genres.length > 0) {
       return game.genres.slice(0, 3).join(', ');
@@ -281,8 +281,8 @@ const openAddModal = async (game) => {
           <img src={logo} alt="Cartridge Logo" style={{ width: '160px', height: 'auto' }} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '25px' }}>
-          {['Home', 'Collections', 'Profile'].map((item) => (
-            <button key={item} style={{ padding: '16px 20px', backgroundColor: item === 'Collections' ? '#98B910' : 'transparent', border: 'none', color: item === 'Collections' ? '#143910' : '#fff', textAlign: 'left', borderRadius: '30px', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>
+          {['Home', 'Collection', 'Profile'].map((item) => (
+            <button key={item} style={{ padding: '16px 20px', backgroundColor: item === 'Collection' ? '#98B910' : 'transparent', border: 'none', color: item === 'Collections' ? '#143910' : '#fff', textAlign: 'left', borderRadius: '30px', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>
               {item}
             </button>
           ))}
