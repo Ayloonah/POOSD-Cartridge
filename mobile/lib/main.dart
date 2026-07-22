@@ -8,10 +8,7 @@ import 'services/api_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/reset_pw_screen.dart';
 import 'screens/verify_email_confirm_screen.dart';
-
-// Lets the Android App Link handler push a screen without needing its own
-// BuildContext (the link can arrive before or after the widget tree builds).
-final navigatorKey = GlobalKey<NavigatorState>();
+import 'utils/navigator_key.dart';
 
 void main() {
   // So web links look like /reset-password?token=... instead of /#/reset-password?token=...

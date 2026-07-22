@@ -49,18 +49,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     _genres = Set.from(widget.current.genres);
   }
 
-  // Reset every field back to "no filter"
+  // Resets every field back to "no filter" and applies immediately —
+  // clearing is itself the action here, rather than needing a separate trip
+  // down to "Apply Filters" afterward to actually see the full collection.
   void _clearAll() {
-    setState(() {
-      _listIds = {};
-      _playedFilter = null;
-      _yearRange = RangeValues(
-        widget.minReleaseYear.toDouble(),
-        widget.maxReleaseYear.toDouble(),
-      );
-      _developers = {};
-      _genres = {};
-    });
+    Navigator.pop(context, const CollectionFilters());
   }
 
   // Sheet contents

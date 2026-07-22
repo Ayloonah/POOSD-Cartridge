@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import '../utils/navigator_key.dart';
+import '../screens/splash_screen.dart';
 import 'auth_state.dart';
 
 class ApiService {
@@ -19,6 +22,25 @@ class ApiService {
     }
   }
 
+  // A 401/403 only means "your session is dead" when the request actually
+  // carried a token in the first place — login's own 403 (unverified
+  // account) is a different thing entirely and must not trigger this.
+  // Logs out and drops the user back at the splash screen automatically,
+  // rather than leaving them stuck seeing confusing errors until they find
+  // the logout button themselves.
+  void _handleAuthFailure(http.Response response, bool wasAuthenticated) {
+    if (!wasAuthenticated) return;
+    if (response.statusCode != 401 && response.statusCode != 403) return;
+    final state = authState;
+    if (state == null || !state.isLoggedIn) return;
+
+    state.logout();
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const SplashScreen()),
+      (route) => false,
+    );
+  }
+
   // get()
   Future<http.Response> get(String endpoint, {String? token}) async {
     final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
@@ -28,6 +50,7 @@ class ApiService {
     }
     final response = await http.get(url, headers: headers);
     _applyRefreshedToken(response);
+    _handleAuthFailure(response, token != null);
     return response;
   }
 
@@ -44,6 +67,7 @@ class ApiService {
       body: jsonEncode(body),
     );
     _applyRefreshedToken(response);
+    _handleAuthFailure(response, token != null);
     return response;
   }
 
@@ -60,6 +84,7 @@ class ApiService {
       body: jsonEncode(body)
     );
     _applyRefreshedToken(response);
+    _handleAuthFailure(response, token != null);
     return response;
   }
 
@@ -76,6 +101,7 @@ class ApiService {
       body: jsonEncode(body)
     );
     _applyRefreshedToken(response);
+    _handleAuthFailure(response, token != null);
     return response;
   }
 
@@ -95,6 +121,7 @@ class ApiService {
       body: body != null ? jsonEncode(body) : null,
     );
     _applyRefreshedToken(response);
+    _handleAuthFailure(response, token != null);
     return response;
   }
 }

@@ -282,6 +282,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       accountBody['confirmNewPassword'] = _confirmNewPasswordController.text;
     }
 
+    // Set below if this save actually triggers a new pending-email
+    // verification, so the confirmation message can call that out
+    // explicitly instead of a generic "Settings saved."
+    var emailVerificationSent = false;
+
     final profileBody = <String, dynamic>{};
     if (_profilePictureChanged) {
       profileBody['newProfilePicture'] = _profilePictureController.text.trim();
@@ -320,10 +325,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _usernameController.text = _originalUsername;
 
         final pendingEmail = data['pendingEmail']?.toString();
+        emailVerificationSent = pendingEmail != null && pendingEmail.isNotEmpty;
         await authState.setPendingEmail(
-          (pendingEmail != null && pendingEmail.isNotEmpty)
-              ? pendingEmail
-              : null,
+          emailVerificationSent ? pendingEmail : null,
         );
         if (user?['email'] != null) {
           _originalEmail = user!['email'].toString();
@@ -376,7 +380,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _passwordMismatch = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Settings saved.', style: GoogleFonts.inter())),
+        SnackBar(
+          content: Text(
+            emailVerificationSent
+                ? 'Settings saved. Check your new email address for a link to confirm the change — it won\'t take effect until then.'
+                : 'Settings saved.',
+            style: GoogleFonts.inter(),
+          ),
+          duration: emailVerificationSent
+              ? const Duration(seconds: 6)
+              : const Duration(seconds: 4),
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -636,18 +650,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),
