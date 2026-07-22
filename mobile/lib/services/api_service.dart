@@ -13,11 +13,17 @@ class ApiService {
   // to wire that up individually.
   static AuthState? authState;
 
+  // Lets a full-app test (e.g. integration_test/) stub every ApiService()
+  // call across the whole widget tree with one http.MockClient, without
+  // threading a client through every screen that constructs its own
+  // ApiService(). Always null in production.
+  static http.Client? testClient;
+
   // Overridable so tests can inject an http.MockClient instead of making
   // real network calls; production call sites all use the default.
   final http.Client _client;
 
-  ApiService({http.Client? client}) : _client = client ?? http.Client();
+  ApiService({http.Client? client}) : _client = client ?? testClient ?? http.Client();
 
   // Checks for the sliding-session refreshed token on any response and
   // applies it, so the caller never needs to think about this.
