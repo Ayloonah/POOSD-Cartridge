@@ -27,26 +27,51 @@ paths:
         Creates the list and, in the same request, assigns it to every
         game entry named in entryIds (adds this list's id to each of
         those GameUserEntry documents' listIds array). entryIds may be
-        empty — a list can be created with no games in it.
+        empty or omitted — a list can be created with no games in it. Every
+        id in entryIds must already be one of the caller's own collection
+        entries, or the whole request is rejected.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ListInput'
+              $ref: '#/components/schemas/CreateListRequest'
       responses:
         '201':
           description: List created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/List'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "List created successfully"
+                  list:
+                    $ref: '#/components/schemas/List'
+                  assignedEntryIds:
+                    type: array
+                    description: The deduplicated entryIds that were actually assigned.
+                    items:
+                      type: string
         '400':
-          description: Bad request
+          description: Missing/blank name, entryIds not an array, or one of the entryIds is malformed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: One or more entryIds don't belong to the caller's own collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     get:
       security:
         - bearerAuth: []
@@ -54,6 +79,7 @@ paths:
         - Lists
       summary: Get all lists for the logged-in user
       operationId: getLists
+      description: Sorted by most-recently-updated first.
       responses:
         '200':
           description: Lists retrieved
@@ -63,6 +89,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/List'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/lists/{listId}:
     parameters:
@@ -77,33 +109,95 @@ paths:
         - bearerAuth: []
       tags:
         - Lists
-      summary: Update a list's name, cover image, and game membership
+      summary: Rename a list and/or change its cover image
       operationId: updateList
       description: >
-        Renames/re-covers the list and does a full resync of membership:
-        entryIds is treated as the complete membership list after this
-        request — this list's id is added to the listIds of any
-        newly-included entries, and removed from any previously-member
-        entries no longer present in entryIds.
+        Only touches name and/or coverImage — game membership is NOT
+        managed here. To add or remove a game from this list, use
+        POST/DELETE /api/user-game-entries/lists/{listId}/games/{gameId}
+        instead. PATCH on this same path does exactly the same thing.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ListInput'
+              $ref: '#/components/schemas/UpdateListRequest'
       responses:
         '200':
           description: List updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/List'
-        '404':
-          description: List not found
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "List updated successfully"
+                  list:
+                    $ref: '#/components/schemas/List'
+        '400':
+          description: Invalid list ID, no fields provided, blank name, or coverImage sent as something other than a string/null
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: List not found (or not owned by the caller)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      security:
+        - bearerAuth: []
+      tags:
+        - Lists
+      summary: Rename a list and/or change its cover image (identical to PUT on this path)
+      operationId: patchList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListRequest'
+      responses:
+        '200':
+          description: List updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "List updated successfully"
+                  list:
+                    $ref: '#/components/schemas/List'
+        '400':
+          description: Invalid list ID, no fields provided, blank name, or coverImage sent as something other than a string/null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: List not found (or not owned by the caller)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     delete:
       security:
@@ -120,12 +214,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageResponse'
-        '404':
-          description: List not found
+        '400':
+          description: Invalid list ID
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: List not found (or not owned by the caller)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   securitySchemes:
@@ -136,21 +242,22 @@ components:
   schemas:
     List:
       type: object
+      description: Never includes userId — lists are only ever returned for their owner in the first place.
       properties:
-        listId:
+        _id:
           type: string
           example: "64f1a2b3c4d5e6f7a8b9c0d1"
-        userId:
-          type: string
-          example: "64f1a2b3c4d5e6f7a8b9c0d2"
         name:
           type: string
           example: "Played"
+        isPublic:
+          type: boolean
+          default: false
         coverImage:
           type: string
           format: uri
           nullable: true
-          description: Defaults (client-side) to the cover of the first game added to the list.
+          description: Set by the client (e.g. to the cover of the first game added to the list) — not derived server-side.
         createdAt:
           type: string
           format: date-time
@@ -158,10 +265,30 @@ components:
           type: string
           format: date-time
 
-    ListInput:
+    CreateListRequest:
       type: object
       required:
         - name
+      properties:
+        name:
+          type: string
+          example: "Played"
+        isPublic:
+          type: boolean
+          default: false
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+        entryIds:
+          type: array
+          description: GameUserEntry ids (from the caller's own collection) to assign to this new list. Optional — omit or send an empty array for a list with no games.
+          items:
+            type: string
+
+    UpdateListRequest:
+      type: object
+      description: At least one of name or coverImage must be provided.
       properties:
         name:
           type: string
@@ -170,11 +297,6 @@ components:
           type: string
           format: uri
           nullable: true
-        entryIds:
-          type: array
-          description: The complete set of GameUserEntry ids that should belong to this list after this request. Optional — omit or send an empty array for a list with no games.
-          items:
-            type: string
 
     MessageResponse:
       type: object
@@ -182,5 +304,11 @@ components:
         message:
           type: string
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
 servers:
-  - url: http://www.cartridgeapp.fun
+  - url: https://cartridgeapp.fun
