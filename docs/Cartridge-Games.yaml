@@ -22,11 +22,10 @@ paths:
       summary: Search for games
       operationId: searchGames
       description: >
-        Checks our own cached `Game` collection first, then falls back to
-        RAWG for anything not already saved. Results already in our
-        database include a `gameId`; results only found via RAWG include
-        a `rawgId` instead (use `POST /games/rawg/{rawgId}` to cache one
-        before referencing it in a collection entry).
+        Searches RAWG directly (does not currently check our own cached
+        `Game` collection first). Results have no id field of their own —
+        cache one via POST /games/rawg/{rawgId} to get a usable gameId
+        before referencing it in a collection entry.
       parameters:
         - name: search
           in: query
@@ -76,7 +75,7 @@ paths:
                   error:
                     type: string
         '500':
-          description: Server error
+          description: Server error, or RAWG_API_KEY is missing/RAWG request failed
           content:
             application/json:
               schema:
@@ -92,12 +91,13 @@ paths:
         required: true
         schema:
           type: integer
+
     get:
       tags:
         - Games
       summary: Get one game's details directly from RAWG
       operationId: getGameByRawgId
-      description: Fetches and formats a single game from RAWG. Does not save it to our database — use the POST version of this endpoint for that.
+      description: Fetches and formats a single game from RAWG. Does not save it to our database, and the result has no id field — use the POST version of this endpoint for that.
       responses:
         '200':
           description: Game details
@@ -123,12 +123,18 @@ paths:
                 properties:
                   error:
                     type: string
+
     post:
       tags:
         - Games
       summary: Cache a RAWG game into our database
       operationId: saveGame
-      description: Fetches the game from RAWG and upserts it into our own `Game` collection (matched on `rawgId`), returning the saved document with its own `gameId`.
+      description: >
+        Requires authentication. Fetches the game from RAWG and upserts it
+        into our own Game collection (matched on rawgId), returning the
+        saved document with its own _id.
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Game saved
@@ -143,6 +149,56 @@ paths:
                     $ref: '#/components/schemas/Game'
         '400':
           description: Invalid RAWG game ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/games/manual:
+    post:
+      tags:
+        - Games
+      summary: Create a game manually
+      operationId: createManualGame
+      description: >
+        For games not found via RAWG search. Only name is required —
+        everything else defaults to empty. The created game's source is set
+        to "manual" (vs. "rawg" for cached search results).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualGameInput'
+      responses:
+        '201':
+          description: Manual game created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Manual game created successfully"
+                  game:
+                    $ref: '#/components/schemas/Game'
+        '400':
+          description: Missing/blank name, or genres/platforms/developers sent as something other than an array
           content:
             application/json:
               schema:
@@ -179,8 +235,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Game'
-        '404':
-          description: Game not found
+        '400':
+          description: Game not found (also returned for a malformed gameId)
           content:
             application/json:
               schema:
@@ -202,12 +258,8 @@ components:
   schemas:
     GameSearchResult:
       type: object
-      description: A formatted game result. Has gameId if already cached, otherwise rawgId.
+      description: A formatted RAWG result. Has no id field — cache it (POST /games/rawg/{rawgId}) to get one.
       properties:
-        gameId:
-          type: string
-          nullable: true
-          example: "64f1a2b3c4d5e6f7a8b9c0e1"
         rawgId:
           type: integer
           example: 3498
@@ -230,9 +282,10 @@ components:
           type: string
           format: date
           nullable: true
-        developer:
-          type: string
-          nullable: true
+        developers:
+          type: array
+          items:
+            type: string
         description:
           type: string
 
@@ -240,12 +293,18 @@ components:
       type: object
       description: A game as stored in our own database.
       properties:
-        gameId:
+        _id:
           type: string
           example: "64f1a2b3c4d5e6f7a8b9c0e1"
         rawgId:
           type: integer
+          nullable: true
+          description: Only present for games cached from RAWG; absent for manually-created games.
           example: 3498
+        source:
+          type: string
+          enum: [rawg, manual]
+          default: rawg
         name:
           type: string
           example: "Grand Theft Auto V"
@@ -265,14 +324,45 @@ components:
           type: string
           format: date
           nullable: true
-        developer:
-          type: string
-          nullable: true
+        developers:
+          type: array
+          items:
+            type: string
         description:
           type: string
         cachedAt:
           type: string
           format: date-time
 
+    ManualGameInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        coverImage:
+          type: string
+          format: uri
+          nullable: true
+        genres:
+          type: array
+          items:
+            type: string
+        platforms:
+          type: array
+          items:
+            type: string
+        releaseDate:
+          type: string
+          format: date
+          nullable: true
+        developers:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+
 servers:
-  - url: http://www.cartridgeapp.fun
+  - url: https://cartridgeapp.fun

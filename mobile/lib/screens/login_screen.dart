@@ -22,6 +22,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // Pre-fill the email field if "Remember me" saved one last time
+  @override
+  void initState() {
+    super.initState();
+    final rememberedEmail =
+        Provider.of<AuthState>(context, listen: false).rememberedEmail;
+    if (rememberedEmail != null) {
+      _emailController.text = rememberedEmail;
+      _rememberMe = true;
+    }
+  }
+
   // Called automatically when screen is destroyed
   @override
   void dispose() {
@@ -35,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  bool _rememberMe = true;
 
   bool _isFormValid() {
     return _emailController.text.trim().isNotEmpty &&
@@ -69,6 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
           rawToken,
           data['user']['id'].toString(),
           data['user']['email'],
+        );
+        await authState.setRememberedEmail(
+          _rememberMe ? _emailController.text.trim() : null,
         );
 
         if (!mounted) return;
@@ -200,22 +216,46 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordScreen(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Forgot Password?',
-                      style: GoogleFonts.inter(color: AppColors.textLight),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: () =>
+                          setState(() => _rememberMe = !_rememberMe),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            activeColor: AppColors.lightGreen,
+                            checkColor: AppColors.darkGreen,
+                            onChanged: (value) =>
+                                setState(() => _rememberMe = value ?? false),
+                          ),
+                          Text(
+                            'Remember me',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: GoogleFonts.inter(color: AppColors.textLight),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 if (_errorMessage != null)

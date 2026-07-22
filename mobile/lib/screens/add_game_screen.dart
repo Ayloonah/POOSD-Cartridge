@@ -43,6 +43,11 @@ class _AddGameScreenState extends State<AddGameScreen> {
   void _onSearchChanged(String value) {
     _debounce?.cancel();
 
+    // Also covers showing/hiding the clear button in real time, since that
+    // depends on the controller's text and wouldn't otherwise rebuild until
+    // the debounced search below actually completes
+    setState(() {});
+
     if (value.trim().isEmpty) {
       setState(() {
         _results = [];
@@ -177,18 +182,22 @@ class _AddGameScreenState extends State<AddGameScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),
@@ -218,13 +227,22 @@ class _AddGameScreenState extends State<AddGameScreen> {
                       isDense: true,
                       filled: true,
                       fillColor: AppColors.textBoxFill,
-                      suffixIcon: IconButton(
+                      prefixIcon: IconButton(
                         icon: Icon(Icons.search, color: AppColors.darkGreen),
                         onPressed: () {
                           _debounce?.cancel();
                           _search();
                         },
                       ),
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: Icon(Icons.clear, color: AppColors.darkGreen),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged('');
+                              },
+                            ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide.none,

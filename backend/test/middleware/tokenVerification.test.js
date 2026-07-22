@@ -1,5 +1,6 @@
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { authenticateToken } = require('./tokenVerification');
+const { authenticateToken } = require('../../src/middleware/tokenVerification');
 
 describe('Java Web Token Verification Middleware', () => {
     let req, res, next;
@@ -10,7 +11,8 @@ describe('Java Web Token Verification Middleware', () => {
         };
         res = {
             status: jest.fn().mockReturnThis(),
-            json: jest.fn().mockReturnThis()
+            json: jest.fn().mockReturnThis(),
+            setHeader: jest.fn().mockReturnThis()
         };
         next = jest.fn();
     });
@@ -35,9 +37,9 @@ describe('Java Web Token Verification Middleware', () => {
 
         authenticateToken(req, res, next);
 
-        //Assertions 
+        //Assertions
         expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.json).toHaveBeenCalledWith({ message: 'Token missing' });
+        expect(res.json).toHaveBeenCalledWith({ message: 'Access Denied: Header must follow standard Bearer schema' });
         expect(next).not.toHaveBeenCalled();
     });
 
