@@ -7,7 +7,9 @@ import Button from '../components/Button';
 import AddGameModal from '../components/AddGameModal';
 import GameDetailModal from '../components/GameDetailModal';
 import EditGameModal from '../components/EditGameModal';
-import CreateListModal from '../components/CreateListModal'; // 🟢 Import Create List Modal
+import CreateListModal from '../components/CreateListModal'; 
+import EditListModal from '../components/EditListModal';
+
 import { api } from '../api';
 import { AuthContext } from '../context/AuthContext'; 
 
@@ -28,6 +30,25 @@ function normalizeEntry(raw) {
   };
 }
 
+function getEntryListIds(entry) {
+  if (!Array.isArray(entry?.listIds)) {
+    return [];
+  }
+
+  return entry.listIds
+    .map((listId) => {
+      if (
+        listId &&
+        typeof listId === 'object'
+      ) {
+        return listId._id?.toString();
+      }
+
+      return listId?.toString();
+    })
+    .filter(Boolean);
+}
+
 export default function HomePage() {
   const { token } = useContext(AuthContext); 
   const currentToken = token || localStorage.getItem('token'); 
@@ -37,11 +58,14 @@ export default function HomePage() {
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [entryToEdit, setEntryToEdit] = useState(null); 
+  const [listToEdit, setListToEdit] = useState(null);
+  const [recentLists, setRecentLists] = useState([]);
 
   // Bridge memory for list creation state while adding a game on the fly
   const [tempListName, setTempListName] = useState('');
   const [tempSelectedEntryIds, setTempSelectedEntryIds] = useState([]);
   const [returnToListModal, setReturnToListModal] = useState(false);
+
 
   const [allGames, setAllGames] = useState([]); 
   const [recentGames, setRecentGames] = useState([]);
@@ -63,11 +87,35 @@ export default function HomePage() {
         setRecentGames(normalizedEntries.slice(0, 5));
       }
 
-      const listsRes = await api.get('/lists', currentToken);
-      if (listsRes.ok) {
-        const listsData = await listsRes.json();
-        setMyLists(Array.isArray(listsData) ? listsData : []);
-      }
+      const listsRes = await api.get(
+  '/lists',
+  currentToken
+);
+
+  if (listsRes.ok) {
+    const listsData = await listsRes.json();
+
+    const listsArray = Array.isArray(listsData)
+      ? listsData
+      : [];
+
+    const sortedLists = [...listsArray].sort(
+      (listA, listB) =>
+        new Date(
+          listB.updatedAt ||
+            listB.createdAt ||
+            0
+        ) -
+        new Date(
+          listA.updatedAt ||
+            listA.createdAt ||
+            0
+        )
+    );
+
+    setMyLists(sortedLists);
+    setRecentLists(sortedLists.slice(0, 5));
+  }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
       setError("Failed to load dashboard data.");
@@ -125,6 +173,17 @@ export default function HomePage() {
           setReturnToListModal(true);
           setIsCreateListOpen(false);
           setIsAddModalOpen(true);
+        }}
+      />
+      <EditListModal
+        isOpen={listToEdit !== null}
+        list={listToEdit}
+        onClose={() => setListToEdit(null)}
+        onListUpdated={() => {
+          fetchDashboardData();
+        }}
+        onListDeleted={() => {
+          fetchDashboardData();
         }}
       />
 
@@ -224,19 +283,52 @@ export default function HomePage() {
             </Button>
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '24px',
+            overflowX: 'auto',
+            paddingBottom: '16px'
+          }}
+        >
           {isLoading ? (
-            <p style={{ color: '#6B7280' }}>Loading lists...</p>
-          ) : myLists.length > 0 ? (
-            myLists.map((list) => (
-              <ListCard 
-                key={list._id} 
-                listName={list.name} 
+            <p style={{ color: '#6B7280' }}>
+              Loading lists...
+            </p>
+          ) : recentLists.length > 0 ? (
+            recentLists.map((list) => (
+              <ListCard
+                key={list._id}
+                list={list}
+                entries={allGames
+                  .filter((entry) =>
+                    getEntryListIds(entry).includes(
+                      list._id?.toString()
+                    )
+                  )
+                  .sort(
+                    (entryA, entryB) =>
+                      new Date(entryB.createdAt || 0) -
+                      new Date(entryA.createdAt || 0)
+                  )}
+                compact
+                showActions
+                onView={() =>
+                  navigate(
+                    `/collection?list=${encodeURIComponent(
+                      list._id
+                    )}`
+                  )
+                }
+                onEdit={() =>
+                  setListToEdit(list)
+                }
               />
             ))
           ) : (
-            <p style={{ color: '#6B7280' }}>No lists created yet.</p>
+            <p style={{ color: '#6B7280' }}>
+              No lists created yet.
+            </p>
           )}
         </div>
       </section>
