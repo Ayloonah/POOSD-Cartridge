@@ -13,6 +13,12 @@ class ApiService {
   // to wire that up individually.
   static AuthState? authState;
 
+  // Overridable so tests can inject an http.MockClient instead of making
+  // real network calls; production call sites all use the default.
+  final http.Client _client;
+
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
+
   // Checks for the sliding-session refreshed token on any response and
   // applies it, so the caller never needs to think about this.
   void _applyRefreshedToken(http.Response response) {
@@ -48,7 +54,7 @@ class ApiService {
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final response = await http.get(url, headers: headers);
+    final response = await _client.get(url, headers: headers);
     _applyRefreshedToken(response);
     _handleAuthFailure(response, token != null);
     return response;
@@ -61,7 +67,7 @@ class ApiService {
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final response = await http.post(
+    final response = await _client.post(
       url,
       headers: headers,
       body: jsonEncode(body),
@@ -78,7 +84,7 @@ class ApiService {
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final response = await http.put(
+    final response = await _client.put(
       url,
       headers: headers,
       body: jsonEncode(body)
@@ -95,7 +101,7 @@ class ApiService {
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    final response = await http.patch(
+    final response = await _client.patch(
       url,
       headers: headers,
       body: jsonEncode(body)
@@ -115,7 +121,7 @@ class ApiService {
     if (body != null) {
       headers['Content-Type'] = 'application/json';
     }
-    final response = await http.delete(
+    final response = await _client.delete(
       url,
       headers: headers,
       body: body != null ? jsonEncode(body) : null,
