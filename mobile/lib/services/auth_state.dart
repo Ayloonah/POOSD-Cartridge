@@ -8,12 +8,14 @@ class AuthState extends ChangeNotifier {
   String? _userId;
   String? _email;
   String? _pendingEmail; // set while a new email is awaiting SendGrid re-verification
+  String? _rememberedEmail; // pre-fills the login screen's email field, if "Remember me" was checked
 
   // Allows for a read-only way to access private vars from outside the AuthState class
   String? get token => _token;
   String? get userId => _userId;
   String? get email => _email;
   String? get pendingEmail => _pendingEmail;
+  String? get rememberedEmail => _rememberedEmail;
 
   // Checks for if user is logged in or not
   bool get isLoggedIn => _token != null;
@@ -66,6 +68,21 @@ class AuthState extends ChangeNotifier {
     }
   }
 
+  // Saves (or clears) the email the login screen should pre-fill next time.
+  // Deliberately email-only, never the password — storing a raw password on
+  // device just to save a bit of typing isn't a trade worth making.
+  Future<void> setRememberedEmail(String? email) async {
+    _rememberedEmail = email;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    if (email == null) {
+      await prefs.remove('rememberedEmail');
+    } else {
+      await prefs.setString('rememberedEmail', email);
+    }
+  }
+
   // Removed stored info upon logout
   // Updates info on disc for logout permanence
   Future<void> logout() async {
@@ -75,8 +92,14 @@ class AuthState extends ChangeNotifier {
     _pendingEmail = null;
     notifyListeners();
 
+    // Preserved across the wipe below — "remember me" is meant to survive
+    // logout, that's the whole point of it.
     final prefs = await SharedPreferences.getInstance();
+    final rememberedEmail = prefs.getString('rememberedEmail');
     await prefs.clear();
+    if (rememberedEmail != null) {
+      await prefs.setString('rememberedEmail', rememberedEmail);
+    }
   }
 
   Future<void> tryAutoLogin() async {
@@ -85,13 +108,14 @@ class AuthState extends ChangeNotifier {
     final userId = prefs.getString('userId');
     final email = prefs.getString('email');
     final pendingEmail = prefs.getString('pendingEmail');
+    _rememberedEmail = prefs.getString('rememberedEmail');
 
     if (token != null && userId != null && email != null) {
       _token = token;
       _userId = userId;
       _email = email;
       _pendingEmail = pendingEmail;
-      notifyListeners();
     }
+    notifyListeners();
   }
 }

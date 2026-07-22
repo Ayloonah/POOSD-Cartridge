@@ -220,18 +220,22 @@ class ListsScreenState extends State<ListsScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),

@@ -143,6 +143,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
             }),
           ),
           child: NavigationBar(
+            height: 68,
             selectedIndex: _selectedIndex,
             onDestinationSelected: _goToTab,
             destinations: const [

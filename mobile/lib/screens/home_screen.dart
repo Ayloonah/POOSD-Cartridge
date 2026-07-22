@@ -196,18 +196,26 @@ class HomeScreenState extends State<HomeScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            // Anchors the logo row to the top of the bar (right after the
+            // status bar inset), so the bar's extra height becomes breathing
+            // room below the logo specifically, instead of being split
+            // evenly above and below it.
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),

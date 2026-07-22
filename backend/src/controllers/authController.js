@@ -299,7 +299,7 @@ exports.resendEmailVerification = async(req, res) => {
 
         await sendVerificationEmail(user.email, newVerificationToken);
 
-        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${verificationToken}`);
+        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${newVerificationToken}`);
 
         return res.status(200).json({
             message: "A new verification link has been sent to your inbox!"
@@ -468,6 +468,7 @@ exports.account = async (req, res) => {
             message: newEmail
             ? "Account updated. Please check your new email to verify your account."
             : "Account settings updated successfully",
+            pendingEmail: user.pendingEmail || null,
             user: {
                 _id: user._id,
                 username: user.username,
