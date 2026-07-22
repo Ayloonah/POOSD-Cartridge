@@ -4,7 +4,7 @@ const GameDetailsModal = ({
   isOpen, 
   onClose, 
   onSubmit, 
-  onDelete, // Added onDelete prop
+  onDelete, 
   gameData, 
   setGameData, 
   userLists = [] 
@@ -28,20 +28,19 @@ const GameDetailsModal = ({
   const availablePlatforms = gameData.platforms || [];
   const coverUrl = gameData.coverImage || gameData.background_image;
 
-  // Helper to extract names whether backend returns a string or an array of objects
-const parseNames = (value) => {
-  if (!value) return 'N/A';
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) {
-    return value.map(item => (typeof item === 'object' ? item.name : item)).join(', ') || 'N/A';
-  }
-  return 'N/A';
-};
+  const parseNames = (value) => {
+    if (!value) return 'N/A';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      return value.map(item => (typeof item === 'object' ? item.name : item)).join(', ') || 'N/A';
+    }
+    return 'N/A';
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
       
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', width: '100%', maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         
         {/* Navigation / Header */}
         <div style={{ padding: '15px 24px 0 24px' }}>
@@ -51,36 +50,36 @@ const parseNames = (value) => {
         </div>
 
         {/* Global View-Only Header Info */}
-        <div style={{ display: 'flex', gap: '16px', padding: '15px 24px 15px 24px' }}>
-          {/* Cover Image */}
+        <div style={{ display: 'flex', gap: '18px', padding: '15px 24px 15px 24px', alignItems: 'center' }}>
+      
           {coverUrl ? (
             <img 
               src={coverUrl} 
               alt={gameData.name} 
-              style={{ width: '85px', height: '110px', objectFit: 'cover', borderRadius: '10px' }} 
+              style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: '12px', flexShrink: 0 }} 
             />
           ) : (
-            <div style={{ width: '85px', height: '110px', backgroundColor: '#e2e8f0', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+            <div style={{ width: '150px', height: '100px', backgroundColor: '#e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', flexShrink: 0 }}>
               🎮
             </div>
           )}
 
-         {/* Title & Metadata */}
-<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-  <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>
-    {gameData.name || 'Untitled Game'}
-  </h2>
-  
-  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-    <strong>Dev:</strong> {parseNames(gameData.developer || gameData.developers)}
-  </p>
-  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-    <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
-  </p>
-  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-    <strong>Genre:</strong> {parseNames(gameData.genres || gameData.genre)}
-  </p>
-</div>
+          {/* Title & Metadata */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px', flex: 1 }}>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>
+              {gameData.name || 'Untitled Game'}
+            </h2>
+            
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Dev:</strong> {parseNames(gameData.developer || gameData.developers)}
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Genre:</strong> {parseNames(gameData.genres || gameData.genre)}
+            </p>
+          </div>
         </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0 24px' }} />
