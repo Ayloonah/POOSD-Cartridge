@@ -13,7 +13,6 @@ const GameSearchPage = () => {
     { id: 'back-id-456', name: 'Backlog' },
   ]);
 
-  // Clean empty state for user collection
   const [userCollection, setUserCollection] = useState([]);
 
   const [filterLists, setFilterLists] = useState([]); 
@@ -30,46 +29,49 @@ const GameSearchPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalFormData, setModalFormData] = useState(null);
 
-  const dynamicDevelopers = useMemo(() => [...new Set(userCollection.map(g => g.developer).filter(Boolean))], [userCollection]);
+  // Helper function to extract developer display string
+  const getDeveloperDisplay = (game) => {
+    if (game.developer) return game.developer;
+    if (Array.isArray(game.developers) && game.developers.length > 0) {
+      return game.developers.join(', ');
+    }
+    return '';
+  };
+
+  // Helper function to extract genre display string (limits to top 3 for clean card height)
+  const getGenreDisplay = (game) => {
+    if (Array.isArray(game.genres) && game.genres.length > 0) {
+      return game.genres.slice(0, 3).join(', ');
+    }
+    if (typeof game.genre === 'string') return game.genre;
+    return 'N/A';
+  };
+
+  const dynamicDevelopers = useMemo(() => {
+    const devs = userCollection.flatMap(g => g.developers || [g.developer]).filter(Boolean);
+    return [...new Set(devs)];
+  }, [userCollection]);
+
   const dynamicGenres = useMemo(() => [...new Set(userCollection.flatMap(g => g.genres || []).filter(Boolean))], [userCollection]);
 
   useEffect(() => {
     if (!query.trim()) return setResults([]);
     setLoading(true);
+    
     const delayDebounceFn = setTimeout(async () => {
-      try {
+    try {
         const response = await fetch(`http://localhost:5000/api/games/search?search=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error();
+        if (!response.ok) throw new Error("Search endpoint failed");
         const data = await response.json();
 
-        setResults(data.results || data);
-      } catch {
-        setResults([
-          { 
-            gameId: null, 
-            rawgId: 9991, 
-            name: `${query} Red Version`, 
-            developer: 'Game Freak', 
-            releaseDate: '1996-02-27', 
-            genres: ['RPG'], 
-            coverImage: null,
-            platforms: ['Game Boy', 'Nintendo Switch']
-          },
-          { 
-            gameId: "64f1a2b3c4d5e6f7a8b9c0e9", 
-            rawgId: 9992, 
-            name: `${query} Blue Version`, 
-            developer: 'Game Freak', 
-            releaseDate: '1996-02-27', 
-            genres: ['RPG'], 
-            coverImage: null,
-            platforms: ['Game Boy', 'Nintendo Switch']
-          },
-        ]);
+        setResults(data.results || data || []);
+      } catch (err) {
+        console.error("Search error:", err);
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 400);
+
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
@@ -97,16 +99,22 @@ const GameSearchPage = () => {
         const y = game.releaseDate ? new Date(game.releaseDate).getFullYear() : null;
         return (!yearMin || (y && y >= parseInt(yearMin, 10))) && (!yearMax || (y && y <= parseInt(yearMax, 10)));
       })
-      .filter(game => filterDevelopers.length === 0 || filterDevelopers.includes(game.developer))
+      .filter(game => {
+        if (filterDevelopers.length === 0) return true;
+        const gameDevs = game.developers || (game.developer ? [game.developer] : []);
+        return gameDevs.some(dev => filterDevelopers.includes(dev));
+      })
       .filter(game => filterGenres.length === 0 || (game.genres && game.genres.some(g => filterGenres.includes(g))))
       .sort((a, b) => {
+        const devA = getDeveloperDisplay(a);
+        const devB = getDeveloperDisplay(b);
         const sortMap = {
           date_desc: () => new Date(b.dateAdded || b.createdAt) - new Date(a.dateAdded || a.createdAt),
           date_asc: () => new Date(a.dateAdded || a.createdAt) - new Date(b.dateAdded || b.createdAt),
           title_asc: () => a.name.localeCompare(b.name),
           title_desc: () => b.name.localeCompare(a.name),
-          dev_asc: () => (a.developer || '').localeCompare(b.developer || ''),
-          dev_desc: () => (b.developer || '').localeCompare(a.developer || ''),
+          dev_asc: () => devA.localeCompare(devB),
+          dev_desc: () => devB.localeCompare(devA),
           rate_desc: () => b.rating - a.rating,
           rate_asc: () => a.rating - b.rating,
         };
@@ -120,19 +128,53 @@ const GameSearchPage = () => {
     return processedCollection.slice(start, start + itemsPerPage);
   }, [processedCollection, currentPage, itemsPerPage]);
 
-  const openAddModal = (game) => {
+const openAddModal = async (game) => {
     setSelectedGame(game);
     setModalFormData({
       ...game,
-      played: false, 
-      hoursPlayed: 0, 
-      rating: 0, 
+      developer: getDeveloperDisplay(game) || 'Loading...',
+      played: false,
+      hoursPlayed: 0,
+      rating: 0,
       review: '',
-      platforms: game.platforms || [], 
-      platformPlayed: '', 
+      platforms: game.platforms || [],
+      platformPlayed: '',
       listIds: []
     });
     setIsModalOpen(true);
+
+    const id = game.id || game.rawgId;
+    if (!id) return;
+
+    try {
+      const detailRes = await fetch(`http://localhost:5000/api/games/rawg/${id}`);
+      if (detailRes.ok) {
+        const detailData = await detailRes.json();
+        const enrichedGame = {
+          ...game,
+          ...detailData,
+          developers: detailData.developers || game.developers || []
+        };
+        setSelectedGame(enrichedGame);
+        setModalFormData(prev => ({
+          ...prev,
+          ...enrichedGame,
+          developer: getDeveloperDisplay(enrichedGame) || 'Unknown Developer',
+          played: prev.played,
+          hoursPlayed: prev.hoursPlayed,
+          rating: prev.rating,
+          review: prev.review,
+          platformPlayed: prev.platformPlayed,
+          listIds: prev.listIds,
+        }));
+      } else {
+        console.warn(`Detail fetch returned ${detailRes.status} for game ${id}`);
+        setModalFormData(prev => ({ ...prev, developer: 'Unknown Developer' }));
+      }
+    } catch (err) {
+      console.error(`Detail fetch error for game ${id}:`, err);
+      setModalFormData(prev => ({ ...prev, developer: 'Unknown Developer' }));
+    }
   };
 
   const openEditModal = (game) => {
@@ -144,7 +186,7 @@ const GameSearchPage = () => {
       rawgId: game.rawgId, 
       name: game.name, 
       releaseDate: game.releaseDate,
-      developer: game.developer || 'Unknown Developer', 
+      developer: getDeveloperDisplay(game) || 'Unknown Developer', 
       played: game.played ?? true,
       hoursPlayed: game.hoursPlayed ?? 0, 
       rating: game.rating ?? 0, 
@@ -192,7 +234,8 @@ const GameSearchPage = () => {
       gameId: selectedGame.gameId || null,
       rawgId: selectedGame.rawgId || selectedGame.id || null,
       name: selectedGame.name,
-      developer: selectedGame.developer || 'Unknown Developer',
+      developer: getDeveloperDisplay(selectedGame) || 'Unknown Developer',
+      developers: selectedGame.developers || [],
       releaseDate: selectedGame.releaseDate,
       genres: selectedGame.genres || [],
       coverImage: selectedGame.coverImage || null,
@@ -262,15 +305,96 @@ const GameSearchPage = () => {
               {!loading && results.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
                   {results.map((game) => (
-                    <div key={game.rawgId || game.gameId || game.id} style={{ border: '2px dashed #98B910', borderRadius: '20px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', height: '320px' }}>
-                      <div style={{ width: '100%', textAlign: 'center' }}>
-                        {game.coverImage ? <img src={game.coverImage} alt={game.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '15px', marginBottom: '10px' }} /> : <div style={{ width: '80px', height: '80px', backgroundColor: '#cbd5e1', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px auto', fontSize: '20px' }}>🎮</div>}
-                        <h4 style={{ margin: '0 0 5px 0', color: '#143910', fontSize: '16px' }}>{game.name}</h4>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>Dev: {game.developer || 'N/A'} • Released: {game.releaseDate ? new Date(game.releaseDate).getFullYear() : 'N/A'}</span>
-                      </div>
-                      <button onClick={() => openAddModal(game)} style={{ backgroundColor: '#143910', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>+ Add to Collection</button>
-                    </div>
-                  ))}
+  <div
+    key={game.rawgId || game.gameId || game.id}
+    style={{
+      border: '2px dashed #98B910',
+      borderRadius: '20px',
+      padding: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      justify: 'space-between',
+      backgroundColor: '#f8fafc',
+      boxSizing: 'border-box'
+    }}
+  >
+    <div>
+      {/* BIGGER COVER IMAGE */}
+      {game.coverImage ? (
+        <img
+          src={game.coverImage}
+          alt={game.name}
+          style={{
+            width: '100%',
+            height: '150px',
+            objectFit: 'cover',
+            borderRadius: '12px',
+            marginBottom: '12px'
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: '100%',
+            height: '150px',
+            backgroundColor: '#cbd5e1',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
+            marginBottom: '12px'
+          }}
+        >
+          🎮
+        </div>
+      )}
+
+      {/* GAME DETAILS */}
+      <h4
+        style={{
+          margin: '0 0 6px 0',
+          color: '#143910',
+          fontSize: '16px',
+          textAlign: 'center',
+          lineHeight: '1.2'
+        }}
+      >
+        {game.name}
+      </h4>
+
+      <div
+        style={{
+          fontSize: '12px',
+          color: '#64748b',
+          lineHeight: '1.4',
+          textAlign: 'center',
+          marginBottom: '16px'
+        }}
+      >
+        <div><strong>Genre:</strong> {getGenreDisplay(game)}</div>
+        <div><strong>Released:</strong> {game.releaseDate ? new Date(game.releaseDate).getFullYear() : 'N/A'}</div>
+      </div>
+    </div>
+
+    {/* ACTION BUTTON */}
+    <button
+      onClick={() => openAddModal(game)}
+      style={{
+        backgroundColor: '#143910',
+        color: '#fff',
+        border: 'none',
+        padding: '10px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        width: '100%'
+      }}
+    >
+      + Add to Collection
+    </button>
+  </div>
+))}
                 </div>
               )}
             </div>
@@ -378,7 +502,7 @@ const GameSearchPage = () => {
                           {game.coverImage ? <img src={game.coverImage} alt={game.name} style={{ height: '140px', width: '100%', objectFit: 'cover', borderRadius: '16px', marginBottom: '12px' }} /> : <div style={{ height: '140px', backgroundColor: '#cbd5e1', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', marginBottom: '12px' }}>🎮</div>}
                           <div>
                             <h3 style={{ margin: '0 0 4px 0', color: '#143910', fontSize: '18px', fontWeight: 'bold', lineHeight: '1.3' }}>{game.name}</h3>
-                            <p style={{ margin: '0 0 4px 0', color: '#64748b', fontSize: '13px' }}>Dev: {game.developer || 'Unknown'}</p>
+                            <p style={{ margin: '0 0 4px 0', color: '#64748b', fontSize: '13px' }}>Genre: {getGenreDisplay(game)}</p>
                             {game.platformPlayed && <p style={{ margin: '0 0 8px 0', color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>Platform: {game.platformPlayed}</p>}
                           </div>
                           <div style={{ marginTop: 'auto' }}>

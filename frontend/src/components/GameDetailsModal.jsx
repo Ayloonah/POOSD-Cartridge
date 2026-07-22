@@ -72,7 +72,7 @@ const parseNames = (value) => {
   </h2>
   
   <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-    <strong>Dev:</strong> {parseNames(gameData.developer || gameData.developers)} • <strong>Pub:</strong> {parseNames(gameData.publisher || gameData.publishers)}
+    <strong>Dev:</strong> {parseNames(gameData.developer || gameData.developers)}
   </p>
   <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
     <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
