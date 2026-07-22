@@ -265,8 +265,8 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.roboto(),
-      floatingLabelStyle: GoogleFonts.roboto(color: AppColors.darkGreen),
+      labelStyle: GoogleFonts.inter(),
+      floatingLabelStyle: GoogleFonts.inter(color: AppColors.darkGreen),
       border: const OutlineInputBorder(),
       focusedBorder: const OutlineInputBorder(
         borderSide: BorderSide(color: AppColors.darkGreen, width: 2),
@@ -279,7 +279,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -314,7 +314,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   ),
                   label: Text(
                     'Go Back',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.inter(
                       color: AppColors.darkGreen,
                       fontWeight: FontWeight.w600,
                     ),
@@ -388,7 +388,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                       Expanded(
                         child: Text(
                           widget.gameName,
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.inter(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -399,7 +399,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   const SizedBox(height: 24),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text('Played', style: GoogleFonts.roboto()),
+                    title: Text('Played', style: GoogleFonts.inter()),
                     value: _played,
                     activeThumbColor: AppColors.lightGreen,
                     onChanged: (value) => setState(() => _played = value),
@@ -407,7 +407,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Rating',
-                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                   ),
                   Row(
                     children: [
@@ -427,7 +427,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                       if (_rating != null)
                         TextButton(
                           onPressed: () => setState(() => _rating = null),
-                          child: Text('Clear', style: GoogleFonts.roboto()),
+                          child: Text('Clear', style: GoogleFonts.inter()),
                         ),
                     ],
                   ),
@@ -437,7 +437,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    style: GoogleFonts.roboto(),
+                    style: GoogleFonts.inter(),
                     cursorColor: AppColors.darkGreen,
                     decoration: _fieldDecoration('Hours Played'),
                   ),
@@ -445,7 +445,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   widget.platforms.isNotEmpty
                       ? DropdownButtonFormField<String>(
                           initialValue: _selectedPlatform,
-                          style: GoogleFonts.roboto(color: Colors.black),
+                          style: GoogleFonts.inter(color: Colors.black),
                           iconEnabledColor: AppColors.darkGreen,
                           decoration: _fieldDecoration('Platform'),
                           items: [
@@ -454,7 +454,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                                 value: platform,
                                 child: Text(
                                   platform,
-                                  style: GoogleFonts.roboto(),
+                                  style: GoogleFonts.inter(),
                                 ),
                               ),
                           ],
@@ -463,7 +463,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                         )
                       : TextField(
                           controller: _platformFreeTextController,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration('Platform'),
                         ),
@@ -471,7 +471,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   TextField(
                     controller: _reviewController,
                     maxLines: 4,
-                    style: GoogleFonts.roboto(),
+                    style: GoogleFonts.inter(),
                     cursorColor: AppColors.darkGreen,
                     decoration: _fieldDecoration('Review'),
                   ),
@@ -479,11 +479,11 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                   if (widget.availableLists.isNotEmpty) ...[
                     Text(
                       'Add to Lists',
-                      style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                     ),
                     for (final list in widget.availableLists)
                       CheckboxListTile(
-                        title: Text(list.value, style: GoogleFonts.roboto()),
+                        title: Text(list.value, style: GoogleFonts.inter()),
                         value: _selectedListIds.contains(list.key),
                         activeColor: AppColors.lightGreen,
                         checkColor: AppColors.darkGreen,
@@ -504,7 +504,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                        style: GoogleFonts.inter(color: Colors.red),
                       ),
                     ),
                   ElevatedButton(
@@ -524,7 +524,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
                           )
                         : Text(
                             _isEditing ? 'Save Changes' : 'Add to Collection',
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.inter(
                               color: AppColors.darkGreen,
                               fontWeight: FontWeight.w600,
                             ),

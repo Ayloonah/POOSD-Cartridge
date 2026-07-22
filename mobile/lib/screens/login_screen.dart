@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Text(
                   'Email Address',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.inter(
                     color: AppColors.textLight,
                     fontSize: 14,
                   ),
@@ -140,13 +140,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.roboto(color: Colors.black87),
+                  style: GoogleFonts.inter(color: Colors.black87),
                   cursorColor: AppColors.darkGreen,
                   decoration: InputDecoration(
                     hintText: 'Email Address',
-                    hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                    hintStyle: GoogleFonts.inter(color: Colors.black45),
                     filled: true,
-                    fillColor: AppColors.lightGreen,
+                    fillColor: AppColors.textBoxFill,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'Password',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.inter(
                     color: AppColors.textLight,
                     fontSize: 14,
                   ),
@@ -170,13 +170,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.roboto(color: Colors.black87),
+                  style: GoogleFonts.inter(color: Colors.black87),
                   cursorColor: AppColors.darkGreen,
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                    hintStyle: GoogleFonts.inter(color: Colors.black45),
                     filled: true,
-                    fillColor: AppColors.lightGreen,
+                    fillColor: AppColors.textBoxFill,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: Text(
                       'Forgot Password?',
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                   ),
                 ),
@@ -248,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Text(
                                 'Sign In',
-                                style: GoogleFonts.roboto(fontSize: 16),
+                                style: GoogleFonts.inter(fontSize: 16),
                               ),
                               const SizedBox(width: 6),
                               const Icon(Icons.lock, size: 16),
@@ -272,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           'Register here',
-                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                          style: GoogleFonts.inter(color: AppColors.textLight),
                         ),
                         const SizedBox(width: 4),
                         const Icon(

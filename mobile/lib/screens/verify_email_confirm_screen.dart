@@ -99,7 +99,7 @@ class _VerifyEmailConfirmScreenState extends State<VerifyEmailConfirmScreen> {
                           ? Text(
                               _message ?? '',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.roboto(
+                              style: GoogleFonts.inter(
                                 color: AppColors.textLight,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -122,7 +122,7 @@ class _VerifyEmailConfirmScreenState extends State<VerifyEmailConfirmScreen> {
                       onPressed: _backToLogin,
                       child: Text(
                         'Back to Login',
-                        style: GoogleFonts.roboto(fontSize: 16),
+                        style: GoogleFonts.inter(fontSize: 16),
                       ),
                     ),
                   ],

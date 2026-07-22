@@ -311,7 +311,7 @@ class CollectionScreenState extends State<CollectionScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -338,7 +338,7 @@ class CollectionScreenState extends State<CollectionScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -367,15 +367,15 @@ class CollectionScreenState extends State<CollectionScreen> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    style: GoogleFonts.inter(color: AppColors.darkGreen),
                     decoration: InputDecoration(
                       hintText: 'Search your collection',
-                      hintStyle: GoogleFonts.roboto(
+                      hintStyle: GoogleFonts.inter(
                         color: AppColors.darkGreen.withOpacity(0.6),
                       ),
                       isDense: true,
                       filled: true,
-                      fillColor: AppColors.lightGreen,
+                      fillColor: AppColors.textBoxFill,
                       prefixIcon: Icon(
                         Icons.search,
                         color: AppColors.darkGreen,
@@ -443,7 +443,7 @@ class CollectionScreenState extends State<CollectionScreen> {
                                   padding: const EdgeInsets.all(16.0),
                                   child: Text(
                                     _errorMessage!,
-                                    style: GoogleFonts.roboto(
+                                    style: GoogleFonts.inter(
                                       color: Colors.red,
                                     ),
                                   ),
@@ -455,7 +455,7 @@ class CollectionScreenState extends State<CollectionScreen> {
                                     children: [
                                       Text(
                                         'No games in your collection yet.',
-                                        style: GoogleFonts.roboto(),
+                                        style: GoogleFonts.inter(),
                                       ),
                                       const SizedBox(height: 12),
                                       ElevatedButton(
@@ -466,7 +466,7 @@ class CollectionScreenState extends State<CollectionScreen> {
                                         onPressed: _openAddGame,
                                         child: Text(
                                           'Add a Game',
-                                          style: GoogleFonts.roboto(),
+                                          style: GoogleFonts.inter(),
                                         ),
                                       ),
                                     ],
@@ -555,7 +555,7 @@ class CollectionScreenState extends State<CollectionScreen> {
                                     child: Center(
                                       child: Text(
                                         "You've reached the end of your collection.",
-                                        style: GoogleFonts.roboto(
+                                        style: GoogleFonts.inter(
                                           color: Colors.grey,
                                         ),
                                       ),

@@ -84,7 +84,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 children: [
                   Text(
                     'Filters',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -93,7 +93,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     onPressed: _clearAll,
                     child: Text(
                       'Clear All',
-                      style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                      style: GoogleFonts.inter(color: AppColors.darkGreen),
                     ),
                   ),
                 ],
@@ -102,11 +102,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'Belongs to List',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
                 for (final list in widget.availableLists)
                   CheckboxListTile(
-                    title: Text(list.value, style: GoogleFonts.roboto()),
+                    title: Text(list.value, style: GoogleFonts.inter()),
                     value: _listIds.contains(list.key),
                     activeColor: AppColors.lightGreen,
                     checkColor: AppColors.darkGreen,
@@ -124,24 +124,24 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               const SizedBox(height: 8),
               Text(
                 'Played Status',
-                style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
               ),
               RadioListTile<bool?>(
-                title: Text('All', style: GoogleFonts.roboto()),
+                title: Text('All', style: GoogleFonts.inter()),
                 value: null,
                 groupValue: _playedFilter,
                 activeColor: AppColors.lightGreen,
                 onChanged: (value) => setState(() => _playedFilter = value),
               ),
               RadioListTile<bool?>(
-                title: Text('Played', style: GoogleFonts.roboto()),
+                title: Text('Played', style: GoogleFonts.inter()),
                 value: true,
                 groupValue: _playedFilter,
                 activeColor: AppColors.lightGreen,
                 onChanged: (value) => setState(() => _playedFilter = value),
               ),
               RadioListTile<bool?>(
-                title: Text('Not Yet Played', style: GoogleFonts.roboto()),
+                title: Text('Not Yet Played', style: GoogleFonts.inter()),
                 value: false,
                 groupValue: _playedFilter,
                 activeColor: AppColors.lightGreen,
@@ -151,7 +151,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'Release Year: ${_yearRange.start.round()} - ${_yearRange.end.round()}',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
                 RangeSlider(
                   min: widget.minReleaseYear.toDouble(),
@@ -170,11 +170,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'Developer',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
                 for (final developer in widget.availableDevelopers)
                   CheckboxListTile(
-                    title: Text(developer, style: GoogleFonts.roboto()),
+                    title: Text(developer, style: GoogleFonts.inter()),
                     value: _developers.contains(developer),
                     activeColor: AppColors.lightGreen,
                     checkColor: AppColors.darkGreen,
@@ -193,11 +193,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 const SizedBox(height: 8),
                 Text(
                   'Genre',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
                 for (final genre in widget.availableGenres)
                   CheckboxListTile(
-                    title: Text(genre, style: GoogleFonts.roboto()),
+                    title: Text(genre, style: GoogleFonts.inter()),
                     value: _genres.contains(genre),
                     activeColor: AppColors.lightGreen,
                     checkColor: AppColors.darkGreen,
@@ -236,7 +236,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 },
                 child: Text(
                   'Apply Filters',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.inter(
                     color: AppColors.darkGreen,
                     fontWeight: FontWeight.w600,
                   ),

@@ -89,24 +89,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Remove from Collection?', style: GoogleFonts.roboto()),
+        title: Text('Remove from Collection?', style: GoogleFonts.inter()),
         content: Text(
           'This will remove "${widget.entry['name']}" from your collection.',
-          style: GoogleFonts.roboto(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
         ],
@@ -135,7 +135,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           SnackBar(
             content: Text(
               'Could not delete. Please try again.',
-              style: GoogleFonts.roboto(),
+              style: GoogleFonts.inter(),
             ),
           ),
         );
@@ -147,7 +147,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           SnackBar(
             content: Text(
               'Something went wrong. Please try again.',
-              style: GoogleFonts.roboto(),
+              style: GoogleFonts.inter(),
             ),
           ),
         );
@@ -168,7 +168,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -190,7 +190,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (rating == null || rating == 0) {
       return Text(
         'Not rated yet.',
-        style: GoogleFonts.roboto(
+        style: GoogleFonts.inter(
           color: Colors.green,
           fontWeight: FontWeight.w600,
         ),
@@ -229,7 +229,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -310,7 +310,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       Center(
                         child: Text(
                           entry['name']?.toString() ?? '',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.inter(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
@@ -337,7 +337,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               entry['played'] == true
                                   ? 'Played'
                                   : 'Not Yet Played',
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                             ),
                           ],
                         ),
@@ -358,7 +358,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'Platform: ${entry['platformPlayed']}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (hoursPlayed != null && hoursPlayed > 0)
@@ -366,7 +366,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'Hours Played: ${hoursPlayed % 1 == 0 ? hoursPlayed.toInt() : hoursPlayed}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (genres.isNotEmpty)
@@ -374,7 +374,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 16),
                           child: Text(
                             'Genres: ${genres.join(', ')}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (developers.isNotEmpty)
@@ -382,7 +382,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             '${developers.length > 1 ? "Developers" : "Developer"}: ${developers.join(', ')}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (entry['releaseDate'] != null)
@@ -390,7 +390,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'Release Date: ${DateTime.parse(entry['releaseDate']).year}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (listNames.isNotEmpty)
@@ -398,7 +398,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             'In Lists: ${listNames.join(', ')}',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       if (entry['review'] != null &&
@@ -406,14 +406,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Review',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           entry['review'].toString(),
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                         ),
                       ],
                       const SizedBox(height: 24),
