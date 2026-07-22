@@ -6,7 +6,12 @@ import '../services/api_service.dart';
 import 'login_screen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
-  const ResetPasswordScreen({super.key});
+  // Passed in directly when opened via an Android App Link (native deep link
+  // has no browser URL to read from); left null on web, where the token is
+  // read out of the page's own URL instead.
+  final String? token;
+
+  const ResetPasswordScreen({super.key, this.token});
 
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
@@ -33,7 +38,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    _token = Uri.base.queryParameters['token'];
+    _token = widget.token ?? Uri.base.queryParameters['token'];
 
     _passwordController.addListener(_onFieldChanged);
     _passwordValidationController.addListener(_onFieldChanged);
