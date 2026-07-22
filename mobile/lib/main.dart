@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_state.dart';
+import 'services/api_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/reset_pw_screen.dart';
 import 'screens/verify_email_confirm_screen.dart';
@@ -15,9 +16,16 @@ final navigatorKey = GlobalKey<NavigatorState>();
 void main() {
   // So web links look like /reset-password?token=... instead of /#/reset-password?token=...
   usePathUrlStrategy();
+
+  // Constructed here (rather than via ChangeNotifierProvider's create)
+  // so it can also be handed to ApiService for the sliding-session token
+  // refresh — every API call updates this same instance directly.
+  final authState = AuthState();
+  ApiService.authState = authState;
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AuthState(),
+    ChangeNotifierProvider.value(
+      value: authState,
       child: const MyApp(),
     ),
   );
@@ -38,14 +46,14 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
 
-    // Cold start: the app was launched by tapping the link. Deferred to
-    // after the first frame so navigatorKey.currentState is attached.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) _handleIncomingLink(initialUri);
-    });
-
-    // Warm start: the app was already running when the link was tapped.
+    // Cold start (app launched by tapping the link) is already handled by
+    // Flutter's own engine-level deep-linking, which feeds the link's full
+    // path+query into onGenerateRoute's initial route below — no need to
+    // also handle it here via app_links' getInitialLink(), which would
+    // double-push the same screen on top of itself.
+    //
+    // Warm start (app already running when the link is tapped) isn't
+    // covered by that mechanism, so it's handled here instead.
     _linkSubscription = _appLinks.uriLinkStream.listen(_handleIncomingLink);
   }
 
@@ -91,12 +99,14 @@ class _MyAppState extends State<MyApp> {
         final uri = Uri.parse(settings.name ?? '/');
         if (uri.path == '/reset-password') {
           return MaterialPageRoute(
-            builder: (context) => const ResetPasswordScreen(),
+            builder: (context) =>
+                ResetPasswordScreen(token: uri.queryParameters['token']),
           );
         }
         if (uri.path == '/verify-email') {
           return MaterialPageRoute(
-            builder: (context) => const VerifyEmailConfirmScreen(),
+            builder: (context) =>
+                VerifyEmailConfirmScreen(token: uri.queryParameters['token']),
           );
         }
         //return MaterialPageRoute(builder: (context) => const AuthGate());

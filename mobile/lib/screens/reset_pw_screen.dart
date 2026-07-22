@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
@@ -41,6 +42,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _token = widget.token ?? Uri.base.queryParameters['token'];
 
     _passwordController.addListener(_onFieldChanged);
+    _passwordController.addListener(_checkPasswordsMatch);
     _passwordValidationController.addListener(_onFieldChanged);
     _passwordValidationController.addListener(_checkPasswordsMatch);
     _passwordFocusNode.addListener(_validatePasswordOnBlur);
@@ -82,6 +84,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (!password.contains(RegExp(r'[A-Z]'))) {
       return 'Password must contain an uppercase letter';
     }
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return 'Password must contain a lowercase letter';
+    }
     if (!password.contains(RegExp(r'[0-9]'))) {
       return 'Password must contain a number';
     }
@@ -103,6 +108,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   void dispose() {
     _passwordController.removeListener(_onFieldChanged);
+    _passwordController.removeListener(_checkPasswordsMatch);
     _passwordValidationController.removeListener(_onFieldChanged);
     _passwordValidationController.removeListener(_checkPasswordsMatch);
     _passwordFocusNode.removeListener(_validatePasswordOnBlur);
@@ -143,9 +149,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           _submitted = true;
         });
       } else {
+        // Surface the backend's own message (e.g. "can't match previous
+        // password") instead of a generic one, falling back if unparseable
+        String message =
+            'This reset link is invalid or has expired. Please request a new one.';
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null) {
+            message = data['message'];
+          }
+        } catch (_) {
+          // Keep the generic message
+        }
         setState(() {
-          _errorMessage =
-              'This reset link is invalid or has expired. Please request a new one.';
+          _errorMessage = message;
         });
       }
     } catch (e) {
@@ -261,7 +278,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           borderSide: BorderSide.none,
                         ),
                         helperText:
-                            '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
+                            '8-14 characters, 1 uppercase letter, 1 lowercase letter, 1 number, 1 special character',
                         helperMaxLines: 2,
                         helperStyle: GoogleFonts.roboto(
                           color: AppColors.textLight,

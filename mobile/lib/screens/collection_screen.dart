@@ -24,10 +24,10 @@ class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key, this.initialFilters, this.title});
 
   @override
-  State<CollectionScreen> createState() => _CollectionScreenState();
+  State<CollectionScreen> createState() => CollectionScreenState();
 }
 
-class _CollectionScreenState extends State<CollectionScreen> {
+class CollectionScreenState extends State<CollectionScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -53,6 +53,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
     _scrollController.addListener(_onScroll);
     _loadCollection();
   }
+
+  // Called by MainNavScreen when this tab is (re)selected — see the same
+  // note on HomeScreenState.refresh() for why this is necessary.
+  Future<void> refresh() => _loadCollection();
 
   @override
   void dispose() {

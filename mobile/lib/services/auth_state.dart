@@ -32,6 +32,17 @@ class AuthState extends ChangeNotifier {
     await prefs.setString('email', email);
   }
 
+  // Applies a sliding-session refreshed token (see ApiService), silently
+  // replacing the stored one — the user stays logged in without noticing
+  // as long as they keep using the app.
+  Future<void> updateToken(String token) async {
+    _token = token;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', token);
+  }
+
   // Called once the primary email is confirmed to have actually changed
   // (i.e. after Settings re-fetches the profile and sees a new value)
   Future<void> updateEmail(String email) async {

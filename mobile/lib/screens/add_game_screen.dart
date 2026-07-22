@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,16 +25,42 @@ class _AddGameScreenState extends State<AddGameScreen> {
   String? _errorMessage;
   List<Map<String, dynamic>> _results = [];
 
+  Timer? _debounce;
+  // Guards against an older, slower request overwriting the results of a
+  // newer one that's since resolved (e.g. typing quickly past a first query
+  // whose response comes back after a later one's)
+  int _searchGeneration = 0;
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Fires a debounced search as the user types, so every keystroke doesn't
+  // hit the network — waits for a short pause before actually searching
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+
+    if (value.trim().isEmpty) {
+      setState(() {
+        _results = [];
+        _hasSearched = false;
+        _errorMessage = null;
+      });
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 400), _search);
   }
 
   // Searches RAWG via the backend's /games/search
   Future<void> _search() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
+
+    final generation = ++_searchGeneration;
 
     setState(() {
       _isSearching = true;
@@ -49,7 +76,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
         token: token,
       );
 
-      if (!mounted) return;
+      if (!mounted || generation != _searchGeneration) return;
 
       setState(() {
         if (response.statusCode == 200) {
@@ -60,14 +87,14 @@ class _AddGameScreenState extends State<AddGameScreen> {
         }
       });
     } catch (e) {
-      if (mounted) {
+      if (mounted && generation == _searchGeneration) {
         setState(() {
           _errorMessage = 'Could not search right now. Please try again.';
           _results = [];
         });
       }
     } finally {
-      if (mounted) {
+      if (mounted && generation == _searchGeneration) {
         setState(() {
           _isSearching = false;
         });
@@ -176,7 +203,11 @@ class _AddGameScreenState extends State<AddGameScreen> {
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                   child: TextField(
                     controller: _searchController,
-                    onSubmitted: (_) => _search(),
+                    onChanged: _onSearchChanged,
+                    onSubmitted: (_) {
+                      _debounce?.cancel();
+                      _search();
+                    },
                     style: GoogleFonts.roboto(color: AppColors.darkGreen),
                     cursorColor: AppColors.darkGreen,
                     decoration: InputDecoration(
@@ -189,7 +220,10 @@ class _AddGameScreenState extends State<AddGameScreen> {
                       fillColor: AppColors.lightGreen,
                       suffixIcon: IconButton(
                         icon: Icon(Icons.search, color: AppColors.darkGreen),
-                        onPressed: _search,
+                        onPressed: () {
+                          _debounce?.cancel();
+                          _search();
+                        },
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
