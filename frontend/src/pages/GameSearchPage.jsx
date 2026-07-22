@@ -73,7 +73,8 @@ const GameSearchPage = () => {
     setLoading(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const response = await fetch(`http://www.cartridgeapp.fun/api/games/search?search=${encodeURIComponent(query)}`);
+        //const response = await fetch(`http://www.cartridgeapp.fun/api/games/search?search=${encodeURIComponent(query)}`);
+        const response = await fetch(`http://localhost:5000/api/games/search?search=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error();
         const data = await response.json();
 
@@ -215,8 +216,8 @@ const GameSearchPage = () => {
     }
 
     const url = isExistingEntry 
-      ? `http://www.cartridgeapp.fun/api/gameuserentries/${modalFormData.entryId}`
-      : 'http://www.cartridgeapp.fun/api/gameuserentries';
+  ? `http://localhost:5000/api/gameuserentries/${modalFormData.entryId}`
+  : 'http://localhost:5000/api/gameuserentries';
     
     const method = isExistingEntry ? 'PUT' : 'POST';
 

@@ -1,6 +1,14 @@
 import React from 'react';
 
-const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, userLists = [] }) => {
+const GameDetailsModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  onDelete, // Added onDelete prop
+  gameData, 
+  setGameData, 
+  userLists = [] 
+}) => {
   if (!isOpen || !gameData) return null;
 
   const handleRatingClick = (ratingValue) => {
@@ -18,29 +26,57 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
   };
 
   const availablePlatforms = gameData.platforms || [];
+  const coverUrl = gameData.coverImage || gameData.background_image;
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
       
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', width: '100%', maxWidth: '520px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', width: '100%', maxWidth: '540px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
         
+        {/* Navigation / Header */}
         <div style={{ padding: '15px 24px 0 24px' }}>
           <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
             ← Change Game
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', padding: '15px 24px 20px 24px' }}>
-          <div style={{ width: '75px', height: '95px', backgroundColor: '#e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
-            🎮
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>{gameData.name}</h2>
-            <p style={{ margin: 0, fontSize: '14px', color: '#64748b', fontWeight: '500' }}>{gameData.developer || 'Unknown Developer'}</p>
+        {/* Global View-Only Header Info */}
+        <div style={{ display: 'flex', gap: '16px', padding: '15px 24px 15px 24px' }}>
+          {/* Cover Image */}
+          {coverUrl ? (
+            <img 
+              src={coverUrl} 
+              alt={gameData.name} 
+              style={{ width: '85px', height: '110px', objectFit: 'cover', borderRadius: '10px' }} 
+            />
+          ) : (
+            <div style={{ width: '85px', height: '110px', backgroundColor: '#e2e8f0', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px' }}>
+              🎮
+            </div>
+          )}
+
+          {/* Title & Metadata */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
+            <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>
+              {gameData.name || 'Untitled Game'}
+            </h2>
+            
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Dev:</strong> {gameData.developer || 'N/A'} • <strong>Pub:</strong> {gameData.publisher || 'N/A'}
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+              <strong>Genre:</strong> {Array.isArray(gameData.genres) ? gameData.genres.join(', ') : (gameData.genre || 'N/A')}
+            </p>
           </div>
         </div>
 
-        <form onSubmit={onSubmit} style={{ padding: '0 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0 24px' }} />
+
+        {/* Editable User Fields Form */}
+        <form onSubmit={onSubmit} style={{ padding: '16px 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <label style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>Played</label>
@@ -61,7 +97,9 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
             >
               <option value="">Select platform...</option>
               {availablePlatforms.map((system) => (
-                <option key={system} value={system}>{system}</option>
+                <option key={typeof system === 'object' ? system.name : system} value={typeof system === 'object' ? system.name : system}>
+                  {typeof system === 'object' ? system.name : system}
+                </option>
               ))}
             </select>
           </div>
@@ -73,7 +111,7 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
               min="0"
               value={gameData.hoursPlayed || 0} 
               onChange={(e) => setGameData(prev => ({ ...prev, hoursPlayed: e.target.value }))}
-              style={{ width: '60px', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '14px', color: '#0f172a' }}
+              style={{ width: '70px', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '14px', color: '#0f172a' }}
             />
           </div>
 
@@ -85,7 +123,7 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
                   key={starValue}
                   type="button"
                   onClick={() => handleRatingClick(starValue)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '24px', color: starValue <= gameData.rating ? '#ffb300' : '#cbd5e1' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '24px', color: starValue <= (gameData.rating || 0) ? '#ffb300' : '#cbd5e1' }}
                 >
                   ★
                 </button>
@@ -113,10 +151,10 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>Review</label>
             <textarea 
-              rows="4" 
+              rows="3" 
               placeholder="Write your thoughts here..." 
               value={gameData.review || ''} 
               onChange={(e) => setGameData(prev => ({ ...prev, review: e.target.value }))}
@@ -124,13 +162,26 @@ const GameDetailsModal = ({ isOpen, onClose, onSubmit, gameData, setGameData, us
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
-            <button type="button" onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#e2e8f0', color: '#334155', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
-              Cancel
-            </button>
-            <button type="submit" style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', backgroundColor: '#143910', color: '#ffffff', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
-              Save Game
-            </button>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+            {gameData.entryId ? (
+              <button 
+                type="button" 
+                onClick={() => onDelete(gameData.entryId)} 
+                style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#fee2e2', color: '#dc2626', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+              >
+                Delete Entry
+              </button>
+            ) : <div />}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="button" onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#e2e8f0', color: '#334155', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button type="submit" style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', backgroundColor: '#143910', color: '#ffffff', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}>
+                Save Game
+              </button>
+            </div>
           </div>
 
         </form>
