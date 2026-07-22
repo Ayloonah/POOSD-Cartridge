@@ -21,6 +21,7 @@ export default function DashboardLayout({
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [pendingEmail, setPendingEmail] = useState(() => localStorage.getItem('pendingEmail'));
+  const [userProfilePic, setUserProfilePic] = useState('');
   const [isResending, setIsResending] = useState(false);
   const [bannerMessage, setBannerMessage] = useState(null);
 
@@ -29,7 +30,6 @@ export default function DashboardLayout({
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  // 🟢 Re-verify status against /auth/me on every layout mount / page navigation
   useEffect(() => {
     const checkVerificationStatus = async () => {
       if (!currentToken) return;
@@ -38,12 +38,14 @@ export default function DashboardLayout({
         const response = await api.get('/auth/me', currentToken);
         if (response.ok) {
           const data = await response.json();
-          
+          if (data.profilePicture) {
+            setUserProfilePic(data.profilePicture);
+          }
+
           if (data.pendingEmail) {
             setPendingEmail(data.pendingEmail);
             localStorage.setItem('pendingEmail', data.pendingEmail);
           } else {
-            // Clean up localStorage and state if pendingEmail is now null/verified
             setPendingEmail(null);
             localStorage.removeItem('pendingEmail');
           }
@@ -299,13 +301,14 @@ export default function DashboardLayout({
               }}
             >
               <img
-                src={profileIcon}
+                src={userProfilePic || profileIcon}
                 alt="Profile"
                 style={{
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover'
                 }}
+                onError={(e) => { e.target.src = profileIcon; }}
               />
             </button>
 

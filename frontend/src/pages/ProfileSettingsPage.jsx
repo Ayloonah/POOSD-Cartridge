@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
-import Button from '../components/Button';
 import { api } from '../api';
 import { AuthContext } from '../context/AuthContext';
+import defaultAvatar from '../assets/Generic avatar.svg';
 
 const ProfileSettingsPage = () => {
   const { token } = useContext(AuthContext);
@@ -15,6 +15,8 @@ const ProfileSettingsPage = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
+  const [profilePicture, setProfilePicture] = useState('');
+  const [newProfilePicture, setNewProfilePicture] = useState('');
 
   // Edit toggles for Username & Email
   const [isEditingUsername, setIsEditingUsername] = useState(false);
@@ -31,7 +33,7 @@ const ProfileSettingsPage = () => {
   const [statusBanner, setStatusBanner] = useState({ type: '', text: '' });
   const [isSaving, setIsSaving] = useState(false);
 
-  // 🟢 Delete Account Modal States
+  // Delete Account Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
@@ -48,6 +50,8 @@ const ProfileSettingsPage = () => {
         setInitialUsername(data.username || '');
         setEmail(data.email || '');
         setBio(data.bio || '');
+        setProfilePicture(data.profilePicture || '');
+        setNewProfilePicture(data.profilePicture || '');
         
         if (data.pendingEmail) {
           setPendingEmail(data.pendingEmail);
@@ -154,7 +158,8 @@ const ProfileSettingsPage = () => {
     }
 
     const profilePayload = {
-      newBio: bio
+      newBio: bio,
+      newProfilePicture: newProfilePicture
     };
 
     try {
@@ -177,7 +182,7 @@ const ProfileSettingsPage = () => {
 
       if (!profResponse.ok) {
         accountSuccess = false;
-        setStatusBanner({ type: 'error', text: profData.message || 'Failed to update bio.' });
+        setStatusBanner({ type: 'error', text: profData.message || 'Failed to update profile.' });
       }
 
       if (accountSuccess) {
@@ -204,11 +209,10 @@ const ProfileSettingsPage = () => {
       console.error("Logout request failed:", err);
     } finally {
       localStorage.clear();
-      navigate('/login');
+      navigate('/');
     }
   };
 
-  // 🟢 Handle custom Delete Account submission
   const handleConfirmDelete = async (e) => {
     e.preventDefault();
     if (!deletePassword) {
@@ -250,15 +254,20 @@ const ProfileSettingsPage = () => {
         
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
           
+          {/* Profile Picture Header Display Only */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', borderBottom: '1px solid #e2e8f0', paddingBottom: '30px' }}>
-            <div style={{ width: '80px', height: '80px', backgroundColor: '#143910', color: '#ffffff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold' }}>
-              {username ? username.charAt(0).toUpperCase() : '?'}
+            <div style={{ width: '80px', height: '80px', backgroundColor: '#98B910', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+              <img 
+                src={profilePicture || newProfilePicture || defaultAvatar} 
+                alt="Profile Avatar" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.target.src = defaultAvatar; }}
+              />
             </div>
             <div>
               <h3 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '20px' }}>
                 {username || 'User Profile'}
               </h3>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>Default avatar based on username initial</span>
             </div>
           </div>
 
@@ -346,6 +355,19 @@ const ProfileSettingsPage = () => {
             />
           </div>
 
+          {/* Profile Picture URL Field (Placed after Bio) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: '600', color: '#334155' }}>Profile Picture URL</label>
+            <input 
+              type="url" 
+              placeholder="https://example.com/avatar.jpg"
+              value={newProfilePicture}
+              onChange={(e) => setNewProfilePicture(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+            />
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Provide a direct image URL to update your profile avatar across the site.</span>
+          </div>
+
           {/* Password Fields */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Change Password</h3>
@@ -403,7 +425,7 @@ const ProfileSettingsPage = () => {
         </form>
       </div>
 
-      {/* 🟢 Custom Delete Account Modal Popup */}
+      {/* Custom Delete Account Modal Popup */}
       {isDeleteModalOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ backgroundColor: '#ffffff', padding: '30px', borderRadius: '12px', maxWidth: '420px', width: '100%', border: '2px solid #ef4444', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
