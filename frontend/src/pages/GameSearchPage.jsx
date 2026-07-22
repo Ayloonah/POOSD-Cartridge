@@ -13,43 +13,8 @@ const GameSearchPage = () => {
     { id: 'back-id-456', name: 'Backlog' },
   ]);
 
-  // mock
-  const [userCollection, setUserCollection] = useState([
-    { 
-      entryId: 'entry-001',
-      gameId: '64f1a2b3c4d5e6f7a8b9c0e1', 
-      rawgId: 3498, 
-      name: 'The Legend of Zelda: Breath of the Wild', 
-      developer: 'Nintendo', 
-      releaseDate: '2017-03-03', 
-      rating: 5, 
-      genres: ['Adventure', 'RPG'],
-      platforms: ['Nintendo Switch', 'Wii U'], 
-      platformPlayed: 'Nintendo Switch', 
-      listIds: ['fav-id-123'], 
-      hoursPlayed: 120, 
-      review: 'Absolutely flawless game!', 
-      played: true, 
-      dateAdded: '2026-01-10T10:00:00Z'
-    },
-    { 
-      entryId: 'entry-002',
-      gameId: '64f1a2b3c4d5e6f7a8b9c0e2', 
-      rawgId: 9995, 
-      name: 'Pokemon', 
-      developer: 'Nintendo', 
-      releaseDate: '1996-02-27', 
-      rating: 5, 
-      genres: ['RPG'], 
-      platforms: ['Game Boy', 'Nintendo Switch'], 
-      platformPlayed: 'Game Boy', 
-      listIds: ['fav-id-123'], 
-      hoursPlayed: 45, 
-      review: 'Classic!', 
-      played: true, 
-      dateAdded: '2026-02-10T10:00:00Z'
-    }
-  ]);
+  // Clean empty state for user collection
+  const [userCollection, setUserCollection] = useState([]);
 
   const [filterLists, setFilterLists] = useState([]); 
   const [playedFilter, setPlayedFilter] = useState('All'); 
@@ -73,7 +38,6 @@ const GameSearchPage = () => {
     setLoading(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
-        //const response = await fetch(`http://www.cartridgeapp.fun/api/games/search?search=${encodeURIComponent(query)}`);
         const response = await fetch(`http://localhost:5000/api/games/search?search=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error();
         const data = await response.json();
@@ -142,7 +106,7 @@ const GameSearchPage = () => {
           title_asc: () => a.name.localeCompare(b.name),
           title_desc: () => b.name.localeCompare(a.name),
           dev_asc: () => (a.developer || '').localeCompare(b.developer || ''),
-          dev_desc: () => (b.developer || '').localeCompare(b.developer || ''),
+          dev_desc: () => (b.developer || '').localeCompare(a.developer || ''),
           rate_desc: () => b.rating - a.rating,
           rate_asc: () => a.rating - b.rating,
         };
@@ -159,6 +123,7 @@ const GameSearchPage = () => {
   const openAddModal = (game) => {
     setSelectedGame(game);
     setModalFormData({
+      ...game,
       played: false, 
       hoursPlayed: 0, 
       rating: 0, 
@@ -173,6 +138,7 @@ const GameSearchPage = () => {
   const openEditModal = (game) => {
     setSelectedGame(game);
     setModalFormData({
+      ...game,
       entryId: game.entryId,
       gameId: game.gameId, 
       rawgId: game.rawgId, 
@@ -216,8 +182,8 @@ const GameSearchPage = () => {
     }
 
     const url = isExistingEntry 
-  ? `http://localhost:5000/api/gameuserentries/${modalFormData.entryId}`
-  : 'http://localhost:5000/api/gameuserentries';
+      ? `http://localhost:5000/api/gameuserentries/${modalFormData.entryId}`
+      : 'http://localhost:5000/api/gameuserentries';
     
     const method = isExistingEntry ? 'PUT' : 'POST';
 
@@ -351,24 +317,28 @@ const GameSearchPage = () => {
                 <div>
                   <h4 style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Developer:</h4>
                   <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px' }}>
-                    {dynamicDevelopers.map(dev => (
-                      <label key={dev} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={filterDevelopers.includes(dev)} onChange={() => toggleCheckboxFilter(dev, filterDevelopers, setFilterDevelopers)} />
-                        {dev}
-                      </label>
-                    ))}
+                    {dynamicDevelopers.length > 0 ? (
+                      dynamicDevelopers.map(dev => (
+                        <label key={dev} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={filterDevelopers.includes(dev)} onChange={() => toggleCheckboxFilter(dev, filterDevelopers, setFilterDevelopers)} />
+                          {dev}
+                        </label>
+                      ))
+                    ) : <span style={{ fontSize: '12px', color: '#94a3b8' }}>No developers yet</span>}
                   </div>
                 </div>
 
                 <div>
                   <h4 style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Genre:</h4>
                   <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid #cbd5e1', padding: '8px', borderRadius: '6px' }}>
-                    {dynamicGenres.map(gen => (
-                      <label key={gen} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={filterGenres.includes(gen)} onChange={() => toggleCheckboxFilter(gen, filterGenres, setFilterGenres)} />
-                        {gen}
-                      </label>
-                    ))}
+                    {dynamicGenres.length > 0 ? (
+                      dynamicGenres.map(gen => (
+                        <label key={gen} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={filterGenres.includes(gen)} onChange={() => toggleCheckboxFilter(gen, filterGenres, setFilterGenres)} />
+                          {gen}
+                        </label>
+                      ))
+                    ) : <span style={{ fontSize: '12px', color: '#94a3b8' }}>No genres yet</span>}
                   </div>
                 </div>
               </div>
@@ -396,7 +366,11 @@ const GameSearchPage = () => {
                   </div>
 
                   {processedCollection.length === 0 ? (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', border: '2px dashed #cbd5e1', borderRadius: '12px' }}>No matches located inside current library datasets.</div>
+                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b', border: '2px dashed #cbd5e1', borderRadius: '20px', backgroundColor: '#f8fafc' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '15px' }}>🕹️</div>
+                      <h2 style={{ color: '#143910', margin: '0 0 10px 0', fontSize: '22px' }}>Your Collection is Empty</h2>
+                      <p style={{ margin: 0, fontSize: '15px' }}>Use the top search bar to search for games and add them to your collection!</p>
+                    </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '25px' }}>
                       {paginatedCollection.map((game) => (
@@ -423,7 +397,7 @@ const GameSearchPage = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px', paddingTop: '25px', borderTop: '2px solid #f1f5f9' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '13px', color: '#64748b' }}>Show:</span>
-                    <select value={itemsPerPage === userCollection.length ? 'All' : itemsPerPage} onChange={(e) => handleItemsPerPageChange(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                    <select value={itemsPerPage === (userCollection.length || 1) ? 'All' : itemsPerPage} onChange={(e) => handleItemsPerPageChange(e.target.value)} style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                       <option value="2">2 per page (Test)</option>
                       <option value="10">10 per page</option>
                       <option value="20">20 per page</option>

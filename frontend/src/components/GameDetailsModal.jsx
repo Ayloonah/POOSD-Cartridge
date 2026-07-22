@@ -28,6 +28,16 @@ const GameDetailsModal = ({
   const availablePlatforms = gameData.platforms || [];
   const coverUrl = gameData.coverImage || gameData.background_image;
 
+  // Helper to extract names whether backend returns a string or an array of objects
+const parseNames = (value) => {
+  if (!value) return 'N/A';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    return value.map(item => (typeof item === 'object' ? item.name : item)).join(', ') || 'N/A';
+  }
+  return 'N/A';
+};
+
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
       
@@ -55,22 +65,22 @@ const GameDetailsModal = ({
             </div>
           )}
 
-          {/* Title & Metadata */}
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>
-              {gameData.name || 'Untitled Game'}
-            </h2>
-            
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              <strong>Dev:</strong> {gameData.developer || 'N/A'} • <strong>Pub:</strong> {gameData.publisher || 'N/A'}
-            </p>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
-            </p>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              <strong>Genre:</strong> {Array.isArray(gameData.genres) ? gameData.genres.join(', ') : (gameData.genre || 'N/A')}
-            </p>
-          </div>
+         {/* Title & Metadata */}
+<div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4px' }}>
+  <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: '700', lineHeight: 1.2 }}>
+    {gameData.name || 'Untitled Game'}
+  </h2>
+  
+  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+    <strong>Dev:</strong> {parseNames(gameData.developer || gameData.developers)} • <strong>Pub:</strong> {parseNames(gameData.publisher || gameData.publishers)}
+  </p>
+  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+    <strong>Released:</strong> {gameData.releaseDate || gameData.released || 'N/A'}
+  </p>
+  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+    <strong>Genre:</strong> {parseNames(gameData.genres || gameData.genre)}
+  </p>
+</div>
         </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0 24px' }} />
