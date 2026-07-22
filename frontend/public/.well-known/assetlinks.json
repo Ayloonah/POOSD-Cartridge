@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cartridgeapp.mobile",
+      "sha256_cert_fingerprints": [
+        "B6:76:48:F1:C8:34:25:1E:68:08:76:90:AC:DB:36:2E:37:5B:DE:FC:4E:2F:B3:C3:E8:B3:E0:A6:8D:15:ED:8E"
+      ]
+    }
+  }
+]

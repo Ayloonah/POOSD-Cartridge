@@ -2,13 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../widgets/initial_avatar.dart';
 import 'splash_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback onGoBack;
+
+  const SettingsScreen({super.key, required this.onGoBack});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -17,6 +21,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _profilePictureController = TextEditingController();
+  final _bioController = TextEditingController();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
@@ -25,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _originalUsername = '';
   String _originalEmail = '';
+  String _originalProfilePicture = '';
+  String _originalBio = '';
 
   bool? _usernameAvailable; // null = unchanged / not yet checked
   bool _isCheckingUsername = false;
@@ -42,6 +50,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _usernameController.addListener(_onUsernameChanged);
     _emailController.addListener(_onFieldChanged);
+    _profilePictureController.addListener(_onFieldChanged);
+    _bioController.addListener(_onFieldChanged);
     _currentPasswordController.addListener(_onFieldChanged);
     _newPasswordController.addListener(_onFieldChanged);
     _confirmNewPasswordController.addListener(_checkPasswordsMatch);
@@ -55,6 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _usernameController.removeListener(_onUsernameChanged);
     _emailController.removeListener(_onFieldChanged);
+    _profilePictureController.removeListener(_onFieldChanged);
+    _bioController.removeListener(_onFieldChanged);
     _currentPasswordController.removeListener(_onFieldChanged);
     _newPasswordController.removeListener(_onFieldChanged);
     _confirmNewPasswordController.removeListener(_checkPasswordsMatch);
@@ -63,6 +75,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _usernameDebounce?.cancel();
     _usernameController.dispose();
     _emailController.dispose();
+    _profilePictureController.dispose();
+    _bioController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmNewPasswordController.dispose();
@@ -93,11 +107,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _usernameController.text = _originalUsername;
           _originalEmail = data['email']?.toString() ?? '';
           _emailController.text = _originalEmail;
+          _originalProfilePicture = data['profilePicture']?.toString() ?? '';
+          _profilePictureController.text = _originalProfilePicture;
+          _originalBio = data['bio']?.toString() ?? '';
+          _bioController.text = _originalBio;
         });
 
         final pendingEmail = data['pendingEmail']?.toString();
         await authState.setPendingEmail(
-          (pendingEmail != null && pendingEmail.isNotEmpty) ? pendingEmail : null,
+          (pendingEmail != null && pendingEmail.isNotEmpty)
+              ? pendingEmail
+              : null,
         );
         if (data['email'] != null && data['email'] != authState.email) {
           await authState.updateEmail(data['email'].toString());
@@ -129,6 +149,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool get _emailChanged =>
       _emailController.text.trim().isNotEmpty &&
       _emailController.text.trim() != _originalEmail;
+
+  bool get _profilePictureChanged =>
+      _profilePictureController.text.trim() != _originalProfilePicture;
+
+  bool get _bioChanged => _bioController.text.trim() != _originalBio;
 
   bool get _wantsPasswordChange =>
       _currentPasswordController.text.isNotEmpty ||
@@ -183,7 +208,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       if (_confirmNewPasswordController.text.isEmpty) {
         _passwordMismatch = null;
-      } else if (_newPasswordController.text != _confirmNewPasswordController.text) {
+      } else if (_newPasswordController.text !=
+          _confirmNewPasswordController.text) {
         _passwordMismatch = 'Passwords don\'t match';
       } else {
         _passwordMismatch = null;
@@ -192,7 +218,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _validateNewPasswordOnBlur() {
-    if (!_newPasswordFocusNode.hasFocus && _newPasswordController.text.isNotEmpty) {
+    if (!_newPasswordFocusNode.hasFocus &&
+        _newPasswordController.text.isNotEmpty) {
       setState(() {
         _newPasswordError = _getPasswordError(_newPasswordController.text);
       });
@@ -206,6 +233,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!password.contains(RegExp(r'[A-Z]'))) {
       return 'Password must contain an uppercase letter';
     }
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return 'Password must contain a lowercase letter';
+    }
     if (!password.contains(RegExp(r'[0-9]'))) {
       return 'Password must contain a number';
     }
@@ -218,15 +248,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isFormValid() {
     if (_usernameChanged && _usernameAvailable != true) return false;
     if (_emailChanged &&
-        !RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(_emailController.text.trim())) {
+        !RegExp(
+          r'^[\w\.-]+@[\w\.-]+\.\w+$',
+        ).hasMatch(_emailController.text.trim())) {
       return false;
     }
     if (_wantsPasswordChange) {
       if (_currentPasswordController.text.isEmpty) return false;
       if (_getPasswordError(_newPasswordController.text) != null) return false;
-      if (_newPasswordController.text != _confirmNewPasswordController.text) return false;
+      if (_newPasswordController.text != _confirmNewPasswordController.text)
+        return false;
     }
-    return _usernameChanged || _emailChanged || _wantsPasswordChange;
+    return _usernameChanged ||
+        _emailChanged ||
+        _wantsPasswordChange ||
+        _profilePictureChanged ||
+        _bioChanged;
   }
 
   Future<void> _handleSave() async {
@@ -235,32 +272,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _errorMessage = null;
     });
 
-    final body = <String, dynamic>{};
-    if (_usernameChanged) body['newUsername'] = _usernameController.text.trim();
-    if (_emailChanged) body['newEmail'] = _emailController.text.trim();
+    final accountBody = <String, dynamic>{};
+    if (_usernameChanged)
+      accountBody['newUsername'] = _usernameController.text.trim();
+    if (_emailChanged) accountBody['newEmail'] = _emailController.text.trim();
     if (_wantsPasswordChange) {
-      body['currentPassword'] = _currentPasswordController.text;
-      body['newPassword'] = _newPasswordController.text;
-      body['confirmNewPassword'] = _confirmNewPasswordController.text;
+      accountBody['currentPassword'] = _currentPasswordController.text;
+      accountBody['newPassword'] = _newPasswordController.text;
+      accountBody['confirmNewPassword'] = _confirmNewPasswordController.text;
     }
+
+    // Set below if this save actually triggers a new pending-email
+    // verification, so the confirmation message can call that out
+    // explicitly instead of a generic "Settings saved."
+    var emailVerificationSent = false;
+
+    final profileBody = <String, dynamic>{};
+    if (_profilePictureChanged) {
+      profileBody['newProfilePicture'] = _profilePictureController.text.trim();
+    }
+    if (_bioChanged) profileBody['newBio'] = _bioController.text.trim();
 
     try {
       final authState = Provider.of<AuthState>(context, listen: false);
       final apiService = ApiService();
-      final response = await apiService.put('/auth/account', body, token: authState.token);
 
-      if (!mounted) return;
+      if (accountBody.isNotEmpty) {
+        final response = await apiService.put(
+          '/auth/account',
+          accountBody,
+          token: authState.token,
+        );
 
-      if (response.statusCode == 200) {
+        if (!mounted) return;
+
+        if (response.statusCode != 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ??
+                data['error'] ??
+                'Could not save changes. Please try again.';
+          });
+          return;
+        }
+
         final data = jsonDecode(response.body);
         final user = data['user'] as Map<String, dynamic>?;
 
-        _originalUsername = user?['username']?.toString() ?? _usernameController.text.trim();
+        _originalUsername =
+            user?['username']?.toString() ?? _usernameController.text.trim();
         _usernameController.text = _originalUsername;
 
         final pendingEmail = data['pendingEmail']?.toString();
+        emailVerificationSent = pendingEmail != null && pendingEmail.isNotEmpty;
         await authState.setPendingEmail(
-          (pendingEmail != null && pendingEmail.isNotEmpty) ? pendingEmail : null,
+          emailVerificationSent ? pendingEmail : null,
         );
         if (user?['email'] != null) {
           _originalEmail = user!['email'].toString();
@@ -273,27 +340,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmNewPasswordController.clear();
+      }
+
+      if (profileBody.isNotEmpty) {
+        final response = await apiService.put(
+          '/auth/profile',
+          profileBody,
+          token: authState.token,
+        );
 
         if (!mounted) return;
-        setState(() {
-          _usernameAvailable = null;
-          _newPasswordError = null;
-          _passwordMismatch = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved.')),
-        );
-      } else {
+
+        if (response.statusCode != 200) {
+          final data = jsonDecode(response.body);
+          setState(() {
+            _errorMessage =
+                data['message'] ??
+                data['error'] ??
+                'Could not save changes. Please try again.';
+          });
+          return;
+        }
+
         final data = jsonDecode(response.body);
+        final user = data['user'] as Map<String, dynamic>?;
+
+        _originalProfilePicture =
+            user?['profilePicture']?.toString() ??
+            _profilePictureController.text.trim();
+        _profilePictureController.text = _originalProfilePicture;
+        _originalBio = user?['bio']?.toString() ?? _bioController.text.trim();
+        _bioController.text = _originalBio;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _usernameAvailable = null;
+        _newPasswordError = null;
+        _passwordMismatch = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            emailVerificationSent
+                ? 'Settings saved. Check your new email address for a link to confirm the change — it won\'t take effect until then.'
+                : 'Settings saved.',
+            style: GoogleFonts.inter(),
+          ),
+          duration: emailVerificationSent
+              ? const Duration(seconds: 6)
+              : const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _errorMessage =
-              data['message'] ?? data['error'] ?? 'Could not save changes. Please try again.';
+          _errorMessage = 'Something went wrong. Please try again.';
         });
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Something went wrong. Please try again.';
-      });
     } finally {
       if (mounted) {
         setState(() {
@@ -304,8 +408,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _goToSplash() {
-    Navigator.pushAndRemoveUntil(
-      context,
+    // rootNavigator: true — this screen now lives inside the Settings tab's
+    // own nested Navigator (so the bottom nav bar stays put while browsing),
+    // but logging out needs to replace the whole app shell, not just this
+    // tab's stack.
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const SplashScreen()),
       (route) => false,
     );
@@ -323,20 +430,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account?'),
+        title: Text('Delete Account?', style: GoogleFonts.inter()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'This permanently deletes your account, collection, and lists. This cannot be undone.',
+              style: GoogleFonts.inter(),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _deletePasswordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: GoogleFonts.inter(),
+              cursorColor: AppColors.darkGreen,
+              decoration: InputDecoration(
                 labelText: 'Current Password',
-                border: OutlineInputBorder(),
+                labelStyle: GoogleFonts.inter(),
+                floatingLabelStyle: GoogleFonts.inter(
+                  color: AppColors.darkGreen,
+                ),
+                border: const OutlineInputBorder(),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.darkGreen, width: 2),
+                ),
               ),
             ),
           ],
@@ -344,11 +461,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
+            ),
           ),
         ],
       ),
@@ -358,7 +481,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (_deletePasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your password to confirm.')),
+        SnackBar(
+          content: Text(
+            'Please enter your password to confirm.',
+            style: GoogleFonts.inter(),
+          ),
+        ),
       );
       return;
     }
@@ -389,16 +517,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
         } catch (_) {
           // Keep the generic message
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message, style: GoogleFonts.inter())),
+        );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          SnackBar(
+            content: Text(
+              'Something went wrong. Please try again.',
+              style: GoogleFonts.inter(),
+            ),
+          ),
         );
       }
     }
+  }
+
+  Widget _buildAvatar() {
+    if (_originalProfilePicture.isEmpty) {
+      return InitialAvatar(
+        seed: _originalUsername,
+        letter: _originalUsername,
+        radius: 40,
+      );
+    }
+    return ClipOval(
+      child: Image.network(
+        _originalProfilePicture,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => InitialAvatar(
+          seed: _originalUsername,
+          letter: _originalUsername,
+          radius: 40,
+        ),
+      ),
+    );
   }
 
   Widget _usernameSuffixIcon() {
@@ -409,7 +567,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: SizedBox(
           height: 16,
           width: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.darkGreen,
+          ),
         ),
       );
     }
@@ -422,115 +583,298 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return const SizedBox.shrink();
   }
 
+  // A light-green pill button used for Go Back, matching the app's
+  // dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  // A white input box whose border turns dark green (instead of the app's
+  // default purple theme color) when focused
+  InputDecoration _fieldDecoration(
+    String label, {
+    Widget? suffixIcon,
+    String? errorText,
+    String? helperText,
+    int? helperMaxLines,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.inter(),
+      floatingLabelStyle: GoogleFonts.inter(color: AppColors.darkGreen),
+      helperText: helperText,
+      helperMaxLines: helperMaxLines,
+      helperStyle: GoogleFonts.inter(fontSize: 12),
+      errorText: errorText,
+      errorStyle: GoogleFonts.inter(fontSize: 12),
+      suffixIcon: suffixIcon,
+      border: const OutlineInputBorder(),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: AppColors.darkGreen, width: 2),
+      ),
+    );
+  }
+
   // Screen contents
   @override
   Widget build(BuildContext context) {
     final pendingEmail = context.watch<AuthState>().pendingEmail;
 
+    final hasChanges = _isFormValid();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: _isLoadingProfile
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                Center(
-                  child: InitialAvatar(
-                    seed: _originalUsername,
-                    letter: _originalUsername,
-                    radius: 40,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: _usernameSuffixIcon(),
-                    errorText: _usernameChanged && _usernameAvailable == false
-                        ? 'That username is taken'
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Current Password',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _newPasswordController,
-                  focusNode: _newPasswordFocusNode,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'New Password',
-                    border: const OutlineInputBorder(),
-                    helperText: '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
-                    helperMaxLines: 2,
-                    errorText: _newPasswordError,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _confirmNewPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm New Password',
-                    border: const OutlineInputBorder(),
-                    errorText: _passwordMismatch,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email Address',
-                    border: const OutlineInputBorder(),
-                    helperText: pendingEmail != null ? 'Pending verification: $pendingEmail' : null,
-                    helperMaxLines: 2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-                  ),
-                ElevatedButton(
-                  onPressed: (_isSaving || !_isFormValid()) ? null : _handleSave,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save'),
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  onPressed: _isSaving ? null : _handleLogout,
-                  child: const Text('Logout'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                  onPressed: _isSaving ? null : _handleDeleteAccount,
-                  child: const Text('Delete Account'),
-                ),
-              ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(76),
+        child: Container(
+          height: 76,
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: AppColors.darkGreen,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  _actionButton(
+                    icon: Icons.arrow_back,
+                    label: 'Go Back',
+                    onPressed: widget.onGoBack,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Account Settings',
+                style: GoogleFonts.vt323(
+                  fontSize: 30,
+                  color: AppColors.darkGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoadingProfile
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.lightGreen,
+                    ),
+                  )
+                : Theme(
+                    data: Theme.of(context).copyWith(
+                      textSelectionTheme: TextSelectionThemeData(
+                        cursorColor: AppColors.darkGreen,
+                        selectionColor: AppColors.lightGreen.withOpacity(0.4),
+                        selectionHandleColor: AppColors.lightGreen,
+                      ),
+                    ),
+                    child: ListView(
+                      padding: const EdgeInsets.all(16.0),
+                      children: [
+                        Center(child: _buildAvatar()),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _usernameController,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration(
+                            'Username',
+                            suffixIcon: _usernameSuffixIcon(),
+                            errorText:
+                                _usernameChanged && _usernameAvailable == false
+                                ? 'That username is taken'
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _profilePictureController,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration('Profile Picture URL'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _bioController,
+                          maxLines: 3,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration(
+                            'Bio',
+                          ).copyWith(alignLabelWithHint: true),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Change Password',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _currentPasswordController,
+                          obscureText: true,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration('Current Password'),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _newPasswordController,
+                          focusNode: _newPasswordFocusNode,
+                          obscureText: true,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration(
+                            'New Password',
+                            helperText:
+                                '8-14 characters, 1 uppercase letter, 1 lowercase letter, 1 number, 1 special character',
+                            helperMaxLines: 2,
+                            errorText: _newPasswordError,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmNewPasswordController,
+                          obscureText: true,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration(
+                            'Confirm New Password',
+                            errorText: _passwordMismatch,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _emailController,
+                          style: GoogleFonts.inter(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: _fieldDecoration(
+                            'Email Address',
+                            helperText: pendingEmail != null
+                                ? 'Pending verification: $pendingEmail'
+                                : null,
+                            helperMaxLines: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              _errorMessage!,
+                              style: GoogleFonts.inter(color: Colors.red),
+                            ),
+                          ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.lightGreen,
+                            foregroundColor: AppColors.darkGreen,
+                            disabledBackgroundColor: Colors.grey[300],
+                            disabledForegroundColor: Colors.grey[600],
+                          ),
+                          onPressed: (_isSaving || !hasChanges)
+                              ? null
+                              : _handleSave,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.darkGreen,
+                                  ),
+                                )
+                              : Text(
+                                  'Save',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkGreen,
+                            foregroundColor: AppColors.textLight,
+                          ),
+                          onPressed: _isSaving ? null : _handleLogout,
+                          child: Text(
+                            'Logout',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textLight,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                          onPressed: _isSaving ? null : _handleDeleteAccount,
+                          child: Text(
+                            'Delete Account',
+                            style: GoogleFonts.inter(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

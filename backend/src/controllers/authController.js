@@ -63,12 +63,15 @@ exports.login = async (req, res) => {
             return res.status(500).json({ message: 'Internal server configuration error '});
         }
 
-        // Create and sign a JWT
+        // Create and sign a JWT. Kept short (20 min) since authenticateToken
+        // reissues a fresh one on every authenticated request — this is
+        // effectively a sliding session that only truly expires after 20
+        // minutes of inactivity, not 20 minutes after login.
         const payload = { userId: user.id, role: user.role };
         const token = JWT.sign (
             payload,
             process.env.JWT_SECRET,
-            { expiresIn: '1h'} // Token will expire in 1 hour
+            { expiresIn: '20m'}
         );
 
         // Send back token along with non-sensitive user data
@@ -283,7 +286,7 @@ exports.resendEmailVerification = async(req, res) => {
         
         // json return is affirmative for security concerns
         if (!user) {
-            return res.status(404).json({ message: "Email verification link sent." })
+            return res.status(200).json({ message: "Email verification link sent." })
         }
 
         if (user.isVerified) {
@@ -296,7 +299,7 @@ exports.resendEmailVerification = async(req, res) => {
 
         await sendVerificationEmail(user.email, newVerificationToken);
 
-        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${verificationToken}`);
+        console.log(`http://localhost:5000/api/auth/verifyEmail?token=${newVerificationToken}`);
 
         return res.status(200).json({
             message: "A new verification link has been sent to your inbox!"
@@ -315,7 +318,7 @@ exports.me = async (req, res) => {
             return res.status(400).json({ message: "Verfication token is missing." })
         }
 
-        const user = await User.findById(userId).select('profilePicture username bio email');
+        const user = await User.findById(userId).select('profilePicture username bio email pendingEmail');
 
         if (!user) {
             return res.status(404).json({ message: "User NOT Found!"})
@@ -325,7 +328,8 @@ exports.me = async (req, res) => {
             profilePicture: user.profilePicture,
             username: user.username,
             bio: user.bio,
-            email: user.email
+            email: user.email,
+            pendingEmail: user.pendingEmail || null
         })
 
     } catch(err) {
@@ -349,7 +353,7 @@ exports.checkUsername = async (req, res) => {
 
         if (existingUser) {
             if (currentUserId && existingUser._id.toString() === currentUserId) {
-                return res.status(400).json({ 
+                return res.status(200).json({ 
                     available: true
                 });
             }
@@ -464,6 +468,7 @@ exports.account = async (req, res) => {
             message: newEmail
             ? "Account updated. Please check your new email to verify your account."
             : "Account settings updated successfully",
+            pendingEmail: user.pendingEmail || null,
             user: {
                 _id: user._id,
                 username: user.username,

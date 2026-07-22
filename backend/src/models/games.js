@@ -2,8 +2,11 @@ const mongoose = require ("mongoose");
 const gameSchema = new mongoose.Schema({
     rawgId: {
         type: Number,
-        required: true,
-        unique: true
+    },
+      source: {
+        type: String,
+        enum: ["rawg", "manual"],
+        default: "rawg"
     },
     name: {
         type: String,
@@ -36,4 +39,13 @@ const gameSchema = new mongoose.Schema({
         default: Date.now
     }
 });
+gameSchema.index(
+    { rawgId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            rawgId: { $type: "number" }
+        }
+    }
+);
 module.exports = mongoose.model("Game", gameSchema);

@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 const List = require("../models/list");
 const Game = require("../models/games");
 const GameUserEntry = require("../models/gameUserEntry");
-const gameSummaryFields =  "_id name coverImage genres releaseDate developers";
+const gameSummaryFields =  "_id name coverImage genres platforms releaseDate developers";
+const gameFields = "name coverImage genres releaseDate developers";
 const entryFields = "_id gameId listIds played hoursPlayed rating review platformPlayed createdAt updatedAt";
 const validIds = (...ids) => {
     return ids.every((id)=>
@@ -250,10 +251,160 @@ const updateGameEntry = async (req, res) => {
         });
     }
 };
+const createGameEntry = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        const {
+            gameId,
+            listIds = [],
+            played,
+            hoursPlayed,
+            rating,
+            review,
+            platformPlayed
+        } = req.body;
+
+        if (
+            !mongoose.Types.ObjectId.isValid(userId) ||
+            !mongoose.Types.ObjectId.isValid(gameId)
+        ) {
+            return res.status(400).json({
+                error: "Invalid user or game ID"
+            });
+        }
+
+        if (!Array.isArray(listIds)) {
+            return res.status(400).json({
+                error: "listIds must be an array"
+            });
+        }
+
+        const uniqueListIds = [
+            ...new Set(listIds.map(String))
+        ];
+
+        if (!validIds(...uniqueListIds)) {
+            return res.status(400).json({
+                error: "One or more list IDs are invalid"
+            });
+        }
+
+        const gameExists = await Game.exists({
+            _id: gameId
+        });
+
+        if (!gameExists) {
+            return res.status(404).json({
+                error: "Game not found"
+            });
+        }
+
+        if (uniqueListIds.length > 0) {
+            const matchingListCount =
+                await List.countDocuments({
+                    _id: {
+                        $in: uniqueListIds
+                    },
+                    userId
+                });
+
+            if (
+                matchingListCount !== uniqueListIds.length
+            ) {
+                return res.status(404).json({
+                    error:
+                        "One or more lists were not found"
+                });
+            }
+        }
+
+        const existingEntry =
+            await GameUserEntry.findOne({
+                userId,
+                gameId
+            });
+
+        if (existingEntry) {
+            return res.status(409).json({
+                error:
+                    "This game is already in the user's collection",
+                entryId: existingEntry._id
+            });
+        }
+
+        const entry = await GameUserEntry.create({
+            userId,
+            gameId,
+            listIds: uniqueListIds,
+            played,
+            hoursPlayed,
+            rating,
+            review,
+            platformPlayed
+        });
+
+        await entry.populate({
+            path: "gameId",
+            select: gameFields
+        });
+
+        res.status(201).json({
+            message: "Game entry created successfully",
+            entry
+        });
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
+const deleteGameEntry = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { entryId } = req.params;
+
+        if (!validIds(userId, entryId)) {
+            return res.status(400).json({
+                error: "Invalid user or entry ID"
+            });
+        }
+
+        const deletedEntry =
+            await GameUserEntry.findOneAndDelete({
+                _id: entryId,
+                userId
+            });
+
+        if (!deletedEntry) {
+            return res.status(404).json({
+                error: "Game entry not found"
+            });
+        }
+
+        res.status(200).json({
+            message:
+                "Game removed from collection successfully",
+            entryId: deletedEntry._id
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
 module.exports = {
     addGameToUserList,
     removeGameFromUserList,
     getUserCollection,
     getGameEntry,
-    updateGameEntry
+    updateGameEntry,
+    createGameEntry,
+    deleteGameEntry
 };
