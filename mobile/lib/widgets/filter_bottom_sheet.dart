@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../models/collection_filters.dart';
 
 // Bottom sheet for staging filter selections before applying them.
@@ -80,20 +82,34 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Filters',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.roboto(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  TextButton(onPressed: _clearAll, child: const Text('Clear All')),
+                  TextButton(
+                    onPressed: _clearAll,
+                    child: Text(
+                      'Clear All',
+                      style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    ),
+                  ),
                 ],
               ),
               if (widget.availableLists.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text('Belongs to List', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Belongs to List',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                ),
                 for (final list in widget.availableLists)
                   CheckboxListTile(
-                    title: Text(list.value),
+                    title: Text(list.value, style: GoogleFonts.roboto()),
                     value: _listIds.contains(list.key),
+                    activeColor: AppColors.lightGreen,
+                    checkColor: AppColors.darkGreen,
                     onChanged: (checked) {
                       setState(() {
                         if (checked == true) {
@@ -106,36 +122,43 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   ),
               ],
               const SizedBox(height: 8),
-              const Text('Played Status', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                'Played Status',
+                style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+              ),
               RadioListTile<bool?>(
-                title: const Text('All'),
+                title: Text('All', style: GoogleFonts.roboto()),
                 value: null,
                 groupValue: _playedFilter,
+                activeColor: AppColors.lightGreen,
                 onChanged: (value) => setState(() => _playedFilter = value),
               ),
               RadioListTile<bool?>(
-                title: const Text('Played'),
+                title: Text('Played', style: GoogleFonts.roboto()),
                 value: true,
                 groupValue: _playedFilter,
+                activeColor: AppColors.lightGreen,
                 onChanged: (value) => setState(() => _playedFilter = value),
               ),
               RadioListTile<bool?>(
-                title: const Text('Not Yet Played'),
+                title: Text('Not Yet Played', style: GoogleFonts.roboto()),
                 value: false,
                 groupValue: _playedFilter,
+                activeColor: AppColors.lightGreen,
                 onChanged: (value) => setState(() => _playedFilter = value),
               ),
               if (hasYearData) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Release Year: ${_yearRange.start.round()} - ${_yearRange.end.round()}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
                 ),
                 RangeSlider(
                   min: widget.minReleaseYear.toDouble(),
                   max: widget.maxReleaseYear.toDouble(),
                   divisions: (widget.maxReleaseYear - widget.minReleaseYear).clamp(1, 100),
                   values: _yearRange,
+                  activeColor: AppColors.lightGreen,
                   labels: RangeLabels(
                     _yearRange.start.round().toString(),
                     _yearRange.end.round().toString(),
@@ -145,11 +168,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               ],
               if (widget.availableDevelopers.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text('Developer', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Developer',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                ),
                 for (final developer in widget.availableDevelopers)
                   CheckboxListTile(
-                    title: Text(developer),
+                    title: Text(developer, style: GoogleFonts.roboto()),
                     value: _developers.contains(developer),
+                    activeColor: AppColors.lightGreen,
+                    checkColor: AppColors.darkGreen,
                     onChanged: (checked) {
                       setState(() {
                         if (checked == true) {
@@ -163,11 +191,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               ],
               if (widget.availableGenres.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text('Genre', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Genre',
+                  style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                ),
                 for (final genre in widget.availableGenres)
                   CheckboxListTile(
-                    title: Text(genre),
+                    title: Text(genre, style: GoogleFonts.roboto()),
                     value: _genres.contains(genre),
+                    activeColor: AppColors.lightGreen,
+                    checkColor: AppColors.darkGreen,
                     onChanged: (checked) {
                       setState(() {
                         if (checked == true) {
@@ -181,6 +214,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               ],
               const SizedBox(height: 16),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightGreen,
+                  foregroundColor: AppColors.darkGreen,
+                ),
                 onPressed: () {
                   Navigator.pop(
                     context,
@@ -197,7 +234,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     ),
                   );
                 },
-                child: const Text('Apply Filters'),
+                child: Text(
+                  'Apply Filters',
+                  style: GoogleFonts.roboto(
+                    color: AppColors.darkGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),

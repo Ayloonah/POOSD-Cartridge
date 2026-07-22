@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../widgets/game_checklist.dart';
@@ -46,16 +48,6 @@ class _CreateListScreenState extends State<CreateListScreen> {
     });
   }
 
-  // Cover defaults to whichever selected game appears first in the collection
-  String? _defaultCoverImage() {
-    for (final entry in widget.collectionEntries) {
-      if (_selectedEntryIds.contains(entry['entryId']?.toString())) {
-        return entry['coverImage']?.toString();
-      }
-    }
-    return null;
-  }
-
   Future<void> _handleSave() async {
     setState(() {
       _isSaving = true;
@@ -67,7 +59,6 @@ class _CreateListScreenState extends State<CreateListScreen> {
       final apiService = ApiService();
       final response = await apiService.post('/lists', {
         'name': _nameController.text.trim(),
-        'coverImage': _defaultCoverImage(),
         'entryIds': _selectedEntryIds.toList(),
       }, token: token);
 
@@ -79,7 +70,9 @@ class _CreateListScreenState extends State<CreateListScreen> {
         final data = jsonDecode(response.body);
         setState(() {
           _errorMessage =
-              data['message'] ?? data['error'] ?? 'Could not create the list. Please try again.';
+              data['message'] ??
+              data['error'] ??
+              'Could not create the list. Please try again.';
         });
       }
     } catch (e) {
@@ -100,41 +93,164 @@ class _CreateListScreenState extends State<CreateListScreen> {
     final canSave = _nameController.text.trim().isNotEmpty && !_isSaving;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New List')),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Column(
         children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'List Name',
-              border: OutlineInputBorder(),
+          Container(
+            color: AppColors.darkGreen,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  _actionButton(
+                    icon: Icons.arrow_back,
+                    label: 'Go Back',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text('Add Games (optional)', style: TextStyle(fontWeight: FontWeight.w600)),
-          GameChecklist(
-            entries: widget.collectionEntries,
-            selectedEntryIds: _selectedEntryIds,
-            onToggle: _toggleEntry,
-          ),
-          const SizedBox(height: 16),
-          if (_errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'New List',
+                style: GoogleFonts.vt323(
+                  fontSize: 30,
+                  color: AppColors.darkGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ElevatedButton(
-            onPressed: canSave ? _handleSave : null,
-            child: _isSaving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Create List'),
+          ),
+          Expanded(
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                textSelectionTheme: TextSelectionThemeData(
+                  cursorColor: AppColors.darkGreen,
+                  selectionColor: AppColors.darkGreen.withOpacity(0.4),
+                  selectionHandleColor: AppColors.darkGreen,
+                ),
+              ),
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    style: GoogleFonts.roboto(),
+                    cursorColor: AppColors.darkGreen,
+                    decoration: InputDecoration(
+                      labelText: 'List Name',
+                      labelStyle: GoogleFonts.roboto(),
+                      floatingLabelStyle: GoogleFonts.roboto(
+                        color: AppColors.darkGreen,
+                      ),
+                      border: const OutlineInputBorder(),
+                      focusedBorder: const OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.darkGreen,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Add Games (optional)',
+                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                  ),
+                  GameChecklist(
+                    entries: widget.collectionEntries,
+                    selectedEntryIds: _selectedEntryIds,
+                    onToggle: _toggleEntry,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        _errorMessage!,
+                        style: GoogleFonts.roboto(color: Colors.red),
+                      ),
+                    ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.lightGreen,
+                      foregroundColor: AppColors.darkGreen,
+                    ),
+                    onPressed: canSave ? _handleSave : null,
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.darkGreen,
+                            ),
+                          )
+                        : Text(
+                            'Create List',
+                            style: GoogleFonts.roboto(
+                              color: AppColors.darkGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  // A light-green pill button used for Go Back, matching the app's
+  // dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
       ),
     );
   }

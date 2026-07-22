@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../widgets/game_checklist.dart';
@@ -22,31 +24,33 @@ class EditListScreen extends StatefulWidget {
 class _EditListScreenState extends State<EditListScreen> {
   late final TextEditingController _nameController;
   late Set<String> _selectedEntryIds;
-  late Set<String> _initialEntryIds; // snapshot for diffing which games changed on save
-  String? _selectedCoverUrl;
+  late Set<String>
+  _initialEntryIds; // snapshot for diffing which games changed on save
 
   bool _isSaving = false;
   bool _isDeleting = false;
   String? _errorMessage;
 
-  // Pre-fill from the list's current name, cover, and member games
+  // Pre-fill from the list's current name and member games
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.list['name']?.toString() ?? '');
+    _nameController = TextEditingController(
+      text: widget.list['name']?.toString() ?? '',
+    );
     _nameController.addListener(_onFieldChanged);
 
     final listId = widget.list['listId']?.toString();
     _selectedEntryIds = widget.collectionEntries
         .where((entry) {
-          final listIds = (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ?? {};
+          final listIds =
+              (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ??
+              {};
           return listIds.contains(listId);
         })
         .map((entry) => entry['entryId'].toString())
         .toSet();
     _initialEntryIds = Set.from(_selectedEntryIds);
-
-    _selectedCoverUrl = widget.list['coverImage']?.toString();
   }
 
   void _onFieldChanged() => setState(() {});
@@ -58,25 +62,12 @@ class _EditListScreenState extends State<EditListScreen> {
     super.dispose();
   }
 
-  // Games currently checked, in collection order — cover choices come from here
-  List<Map<String, dynamic>> get _selectedEntries => widget.collectionEntries
-      .where((entry) => _selectedEntryIds.contains(entry['entryId']?.toString()))
-      .toList();
-
   void _toggleEntry(String entryId) {
     setState(() {
       if (_selectedEntryIds.contains(entryId)) {
         _selectedEntryIds.remove(entryId);
       } else {
         _selectedEntryIds.add(entryId);
-      }
-      // If the game backing the current cover got unchecked, fall back to
-      // the next selected game's cover (or none, if the list is now empty)
-      final stillAvailable =
-          _selectedEntries.any((entry) => entry['coverImage']?.toString() == _selectedCoverUrl);
-      if (!stillAvailable) {
-        _selectedCoverUrl =
-            _selectedEntries.isNotEmpty ? _selectedEntries.first['coverImage']?.toString() : null;
       }
     });
   }
@@ -91,12 +82,13 @@ class _EditListScreenState extends State<EditListScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
 
-      // Game membership isn't part of the list-update endpoint — only name
-      // and cover are
-      final response = await apiService.patch('/lists/${widget.list['listId']}', {
-        'name': _nameController.text.trim(),
-        'coverImage': _selectedCoverUrl,
-      }, token: token);
+      // Game membership isn't part of the list-update endpoint — only the
+      // name is
+      final response = await apiService.patch(
+        '/lists/${widget.list['listId']}',
+        {'name': _nameController.text.trim()},
+        token: token,
+      );
 
       if (!mounted) return;
 
@@ -104,7 +96,9 @@ class _EditListScreenState extends State<EditListScreen> {
         final data = jsonDecode(response.body);
         setState(() {
           _errorMessage =
-              data['message'] ?? data['error'] ?? 'Could not save. Please try again.';
+              data['message'] ??
+              data['error'] ??
+              'Could not save. Please try again.';
         });
         return;
       }
@@ -160,16 +154,25 @@ class _EditListScreenState extends State<EditListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete List?'),
-        content: Text('This will delete "${widget.list['name']}". Games stay in your collection.'),
+        title: Text('Delete List?', style: GoogleFonts.roboto()),
+        content: Text(
+          'This will delete "${widget.list['name']}". Games stay in your collection.',
+          style: GoogleFonts.roboto(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+            ),
           ),
         ],
       ),
@@ -201,7 +204,9 @@ class _EditListScreenState extends State<EditListScreen> {
       if (mounted) {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          const SnackBar(
+            content: Text('Something went wrong. Please try again.'),
+          ),
         );
       }
     }
@@ -212,95 +217,179 @@ class _EditListScreenState extends State<EditListScreen> {
     final canSave = _nameController.text.trim().isNotEmpty && !_isSaving;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit List'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _isDeleting ? null : _handleDelete,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: AppColors.darkGreen,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  _actionButton(
+                    icon: Icons.arrow_back,
+                    label: 'Go Back',
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(width: 8),
+                  _actionButton(
+                    icon: Icons.delete,
+                    label: 'Delete List',
+                    onPressed: _isDeleting ? null : _handleDelete,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Edit List',
+                style: GoogleFonts.vt323(
+                  fontSize: 30,
+                  color: AppColors.darkGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isDeleting
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.lightGreen,
+                    ),
+                  )
+                : Theme(
+                    data: Theme.of(context).copyWith(
+                      textSelectionTheme: TextSelectionThemeData(
+                        cursorColor: AppColors.darkGreen,
+                        selectionColor: AppColors.darkGreen.withOpacity(0.4),
+                        selectionHandleColor: AppColors.darkGreen,
+                      ),
+                    ),
+                    child: ListView(
+                      padding: const EdgeInsets.all(16.0),
+                      children: [
+                        TextField(
+                          controller: _nameController,
+                          style: GoogleFonts.roboto(),
+                          cursorColor: AppColors.darkGreen,
+                          decoration: InputDecoration(
+                            labelText: 'List Name',
+                            labelStyle: GoogleFonts.roboto(),
+                            floatingLabelStyle: GoogleFonts.roboto(
+                              color: AppColors.darkGreen,
+                            ),
+                            border: const OutlineInputBorder(),
+                            focusedBorder: const OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: AppColors.darkGreen,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Games in this List',
+                          style: GoogleFonts.roboto(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        GameChecklist(
+                          entries: widget.collectionEntries,
+                          selectedEntryIds: _selectedEntryIds,
+                          onToggle: _toggleEntry,
+                        ),
+                        const SizedBox(height: 16),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              _errorMessage!,
+                              style: GoogleFonts.roboto(color: Colors.red),
+                            ),
+                          ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.lightGreen,
+                            foregroundColor: AppColors.darkGreen,
+                          ),
+                          onPressed: canSave ? _handleSave : null,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.darkGreen,
+                                  ),
+                                )
+                              : Text(
+                                  'Save Changes',
+                                  style: GoogleFonts.roboto(
+                                    color: AppColors.darkGreen,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
-      body: _isDeleting
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'List Name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text('Cover', style: TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                if (_selectedEntries.isEmpty)
-                  const Text('Add a game below to set a cover.')
-                else
-                  SizedBox(
-                    height: 90,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _selectedEntries.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final entry = _selectedEntries[index];
-                        final coverUrl = entry['coverImage']?.toString();
-                        final isSelected = coverUrl == _selectedCoverUrl;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedCoverUrl = coverUrl),
-                          child: Container(
-                            width: 64,
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isSelected ? Colors.blue : Colors.transparent,
-                                width: 3,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: (coverUrl == null || coverUrl.isEmpty)
-                                  ? Container(color: Colors.grey[300])
-                                  : Image.network(
-                                      coverUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Container(color: Colors.grey[300]),
-                                    ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 24),
-                const Text('Games in this List', style: TextStyle(fontWeight: FontWeight.w600)),
-                GameChecklist(
-                  entries: widget.collectionEntries,
-                  selectedEntryIds: _selectedEntryIds,
-                  onToggle: _toggleEntry,
-                ),
-                const SizedBox(height: 16),
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-                  ),
-                ElevatedButton(
-                  onPressed: canSave ? _handleSave : null,
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Save Changes'),
-                ),
-              ],
-            ),
+    );
+  }
+
+  // A light-green pill button used for Go Back / Delete List, matching
+  // the app's dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+      ),
     );
   }
 }
