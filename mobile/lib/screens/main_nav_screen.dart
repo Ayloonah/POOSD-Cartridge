@@ -131,7 +131,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
               );
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              return GoogleFonts.roboto(
+              return GoogleFonts.inter(
                 color: states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.lightGreen,

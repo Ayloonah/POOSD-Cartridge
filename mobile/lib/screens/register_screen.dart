@@ -279,7 +279,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextField(
                         controller: _usernameController,
                         focusNode: _usernameFocusNode,
-                        style: GoogleFonts.roboto(color: Colors.black87),
+                        style: GoogleFonts.inter(color: Colors.black87),
                         cursorColor: AppColors.darkGreen,
                         decoration: _fieldDecoration(
                           hint: 'Username',
@@ -294,7 +294,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _passwordController,
                         focusNode: _passwordFocusNode,
                         obscureText: _obscurePassword,
-                        style: GoogleFonts.roboto(color: Colors.black87),
+                        style: GoogleFonts.inter(color: Colors.black87),
                         cursorColor: AppColors.darkGreen,
                         decoration: _fieldDecoration(
                           hint: 'Password',
@@ -323,7 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextField(
                         controller: _passwordValidationController,
                         obscureText: _obscureConfirmPassword,
-                        style: GoogleFonts.roboto(color: Colors.black87),
+                        style: GoogleFonts.inter(color: Colors.black87),
                         cursorColor: AppColors.darkGreen,
                         decoration: _fieldDecoration(
                           hint: 'Password',
@@ -351,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextField(
                         controller: _emailController,
                         focusNode: _emailFocusNode,
-                        style: GoogleFonts.roboto(color: Colors.black87),
+                        style: GoogleFonts.inter(color: Colors.black87),
                         cursorColor: AppColors.darkGreen,
                         decoration: _fieldDecoration(
                           hint: 'Email Address',
@@ -364,7 +364,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _emailValidationController,
-                        style: GoogleFonts.roboto(color: Colors.black87),
+                        style: GoogleFonts.inter(color: Colors.black87),
                         cursorColor: AppColors.darkGreen,
                         decoration: _fieldDecoration(
                           hint: 'Email Address',
@@ -409,7 +409,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   children: [
                                     Text(
                                       'Register',
-                                      style: GoogleFonts.roboto(
+                                      style: GoogleFonts.inter(
                                         color: Colors.black54,
                                         fontSize: 16,
                                       ),
@@ -440,7 +440,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             children: [
                               Text(
                                 'Sign in here',
-                                style: GoogleFonts.roboto(
+                                style: GoogleFonts.inter(
                                   color: AppColors.textLight,
                                 ),
                               ),
@@ -468,7 +468,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 14),
+      style: GoogleFonts.inter(color: AppColors.textLight, fontSize: 14),
     );
   }
 
@@ -480,9 +480,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.roboto(color: Colors.black45),
+      hintStyle: GoogleFonts.inter(color: Colors.black45),
       filled: true,
-      fillColor: AppColors.lightGreen,
+      fillColor: AppColors.textBoxFill,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -491,7 +491,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       error: errorText != null ? ErrorMessage(message: errorText) : null,
       helperText: helperText,
       helperMaxLines: 2,
-      helperStyle: GoogleFonts.roboto(color: AppColors.textLight, fontSize: 11),
+      helperStyle: GoogleFonts.inter(color: AppColors.textLight, fontSize: 11),
       suffixIcon: suffixIcon,
     );
   }

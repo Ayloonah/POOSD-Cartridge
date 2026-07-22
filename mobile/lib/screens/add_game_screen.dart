@@ -153,7 +153,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -175,7 +175,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -208,16 +208,16 @@ class _AddGameScreenState extends State<AddGameScreen> {
                       _debounce?.cancel();
                       _search();
                     },
-                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    style: GoogleFonts.inter(color: AppColors.darkGreen),
                     cursorColor: AppColors.darkGreen,
                     decoration: InputDecoration(
                       hintText: 'Search for a game',
-                      hintStyle: GoogleFonts.roboto(
+                      hintStyle: GoogleFonts.inter(
                         color: AppColors.darkGreen.withOpacity(0.6),
                       ),
                       isDense: true,
                       filled: true,
-                      fillColor: AppColors.lightGreen,
+                      fillColor: AppColors.textBoxFill,
                       suffixIcon: IconButton(
                         icon: Icon(Icons.search, color: AppColors.darkGreen),
                         onPressed: () {
@@ -268,13 +268,13 @@ class _AddGameScreenState extends State<AddGameScreen> {
                   if (_errorMessage != null)
                     Text(
                       _errorMessage!,
-                      style: GoogleFonts.roboto(color: Colors.red),
+                      style: GoogleFonts.inter(color: Colors.red),
                     ),
                   if (!_isSearching && _hasSearched && _results.isEmpty) ...[
                     Text(
                       'No games found for "${_searchController.text.trim()}".',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(),
+                      style: GoogleFonts.inter(),
                     ),
                     const SizedBox(height: 12),
                     ElevatedButton(
@@ -285,7 +285,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
                       onPressed: _createManually,
                       child: Text(
                         'Create a New Game Entry',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.inter(
                           color: AppColors.darkGreen,
                           fontWeight: FontWeight.w600,
                         ),
@@ -317,13 +317,13 @@ class _AddGameScreenState extends State<AddGameScreen> {
                             ),
                             title: Text(
                               game['name']?.toString() ?? '',
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                             ),
                             subtitle: Text(
                               (game['platforms'] as List?)?.join(', ') ?? '',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                             ),
                             onTap: () => _selectResult(game),
                           );

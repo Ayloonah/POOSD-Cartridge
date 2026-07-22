@@ -376,7 +376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _passwordMismatch = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Settings saved.', style: GoogleFonts.roboto())),
+        SnackBar(content: Text('Settings saved.', style: GoogleFonts.inter())),
       );
     } catch (e) {
       if (mounted) {
@@ -416,24 +416,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Account?', style: GoogleFonts.roboto()),
+        title: Text('Delete Account?', style: GoogleFonts.inter()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'This permanently deletes your account, collection, and lists. This cannot be undone.',
-              style: GoogleFonts.roboto(),
+              style: GoogleFonts.inter(),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _deletePasswordController,
               obscureText: true,
-              style: GoogleFonts.roboto(),
+              style: GoogleFonts.inter(),
               cursorColor: AppColors.darkGreen,
               decoration: InputDecoration(
                 labelText: 'Current Password',
-                labelStyle: GoogleFonts.roboto(),
-                floatingLabelStyle: GoogleFonts.roboto(
+                labelStyle: GoogleFonts.inter(),
+                floatingLabelStyle: GoogleFonts.inter(
                   color: AppColors.darkGreen,
                 ),
                 border: const OutlineInputBorder(),
@@ -449,14 +449,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
         ],
@@ -470,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text(
             'Please enter your password to confirm.',
-            style: GoogleFonts.roboto(),
+            style: GoogleFonts.inter(),
           ),
         ),
       );
@@ -504,7 +504,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Keep the generic message
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message, style: GoogleFonts.roboto())),
+          SnackBar(content: Text(message, style: GoogleFonts.inter())),
         );
       }
     } catch (e) {
@@ -514,7 +514,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SnackBar(
             content: Text(
               'Something went wrong. Please try again.',
-              style: GoogleFonts.roboto(),
+              style: GoogleFonts.inter(),
             ),
           ),
         );
@@ -582,7 +582,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -610,13 +610,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.roboto(),
-      floatingLabelStyle: GoogleFonts.roboto(color: AppColors.darkGreen),
+      labelStyle: GoogleFonts.inter(),
+      floatingLabelStyle: GoogleFonts.inter(color: AppColors.darkGreen),
       helperText: helperText,
       helperMaxLines: helperMaxLines,
-      helperStyle: GoogleFonts.roboto(fontSize: 12),
+      helperStyle: GoogleFonts.inter(fontSize: 12),
       errorText: errorText,
-      errorStyle: GoogleFonts.roboto(fontSize: 12),
+      errorStyle: GoogleFonts.inter(fontSize: 12),
       suffixIcon: suffixIcon,
       border: const OutlineInputBorder(),
       focusedBorder: const OutlineInputBorder(
@@ -634,7 +634,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -705,7 +705,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 24),
                         TextField(
                           controller: _usernameController,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration(
                             'Username',
@@ -719,7 +719,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 16),
                         TextField(
                           controller: _profilePictureController,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration('Profile Picture URL'),
                         ),
@@ -727,7 +727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: _bioController,
                           maxLines: 3,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration(
                             'Bio',
@@ -736,7 +736,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 24),
                         Text(
                           'Change Password',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -744,7 +744,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: _currentPasswordController,
                           obscureText: true,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration('Current Password'),
                         ),
@@ -753,7 +753,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           controller: _newPasswordController,
                           focusNode: _newPasswordFocusNode,
                           obscureText: true,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration(
                             'New Password',
@@ -767,7 +767,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         TextField(
                           controller: _confirmNewPasswordController,
                           obscureText: true,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration(
                             'Confirm New Password',
@@ -777,7 +777,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SizedBox(height: 24),
                         TextField(
                           controller: _emailController,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: _fieldDecoration(
                             'Email Address',
@@ -793,7 +793,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             padding: const EdgeInsets.only(bottom: 16),
                             child: Text(
                               _errorMessage!,
-                              style: GoogleFonts.roboto(color: Colors.red),
+                              style: GoogleFonts.inter(color: Colors.red),
                             ),
                           ),
                         ElevatedButton(
@@ -817,7 +817,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 )
                               : Text(
                                   'Save',
-                                  style: GoogleFonts.roboto(
+                                  style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -833,7 +833,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: _isSaving ? null : _handleLogout,
                           child: Text(
                             'Logout',
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.inter(
                               color: AppColors.textLight,
                               fontWeight: FontWeight.w600,
                             ),
@@ -848,7 +848,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: _isSaving ? null : _handleDeleteAccount,
                           child: Text(
                             'Delete Account',
-                            style: GoogleFonts.roboto(),
+                            style: GoogleFonts.inter(),
                           ),
                         ),
                       ],

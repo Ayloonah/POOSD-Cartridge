@@ -202,7 +202,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     Text(
                       'This password reset link is invalid or has expired.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 16),
                     Center(
@@ -210,7 +210,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         onPressed: _backToLogin,
                         child: Text(
                           'Back to Login',
-                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                          style: GoogleFonts.inter(color: AppColors.textLight),
                         ),
                       ),
                     ),
@@ -220,7 +220,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     Text(
                       'Your password has been reset. You can now log in.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -237,7 +237,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       onPressed: _backToLogin,
                       child: Text(
                         'Back to Login',
-                        style: GoogleFonts.roboto(fontSize: 16),
+                        style: GoogleFonts.inter(fontSize: 16),
                       ),
                     ),
                   ]
@@ -245,14 +245,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     Text(
                       'Enter a new password for your account.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 20),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'New Password',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.inter(
                           color: AppColors.textLight,
                           fontSize: 14,
                         ),
@@ -263,12 +263,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       controller: _passwordController,
                       focusNode: _passwordFocusNode,
                       obscureText: _obscurePassword,
-                      style: GoogleFonts.roboto(color: Colors.black87),
+                      style: GoogleFonts.inter(color: Colors.black87),
                       decoration: InputDecoration(
                         hintText: 'New Password',
-                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        hintStyle: GoogleFonts.inter(color: Colors.black45),
                         filled: true,
-                        fillColor: AppColors.lightGreen,
+                        fillColor: AppColors.textBoxFill,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -280,7 +280,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         helperText:
                             '8-14 characters, 1 uppercase letter, 1 lowercase letter, 1 number, 1 special character',
                         helperMaxLines: 2,
-                        helperStyle: GoogleFonts.roboto(
+                        helperStyle: GoogleFonts.inter(
                           color: AppColors.textLight,
                           fontSize: 11,
                         ),
@@ -307,7 +307,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Confirm New Password',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.inter(
                           color: AppColors.textLight,
                           fontSize: 14,
                         ),
@@ -317,12 +317,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     TextField(
                       controller: _passwordValidationController,
                       obscureText: _obscureConfirmPassword,
-                      style: GoogleFonts.roboto(color: Colors.black87),
+                      style: GoogleFonts.inter(color: Colors.black87),
                       decoration: InputDecoration(
                         hintText: 'Confirm New Password',
-                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        hintStyle: GoogleFonts.inter(color: Colors.black45),
                         filled: true,
-                        fillColor: AppColors.lightGreen,
+                        fillColor: AppColors.textBoxFill,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -381,7 +381,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             )
                           : Text(
                               'Reset Password',
-                              style: GoogleFonts.roboto(fontSize: 16),
+                              style: GoogleFonts.inter(fontSize: 16),
                             ),
                     ),
                   ],

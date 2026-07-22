@@ -154,24 +154,24 @@ class _EditListScreenState extends State<EditListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete List?', style: GoogleFonts.roboto()),
+        title: Text('Delete List?', style: GoogleFonts.inter()),
         content: Text(
           'This will delete "${widget.list['name']}". Games stay in your collection.',
-          style: GoogleFonts.roboto(),
+          style: GoogleFonts.inter(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Delete',
-              style: GoogleFonts.roboto(color: AppColors.darkGreen),
+              style: GoogleFonts.inter(color: AppColors.darkGreen),
             ),
           ),
         ],
@@ -218,7 +218,7 @@ class _EditListScreenState extends State<EditListScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -293,12 +293,12 @@ class _EditListScreenState extends State<EditListScreen> {
                       children: [
                         TextField(
                           controller: _nameController,
-                          style: GoogleFonts.roboto(),
+                          style: GoogleFonts.inter(),
                           cursorColor: AppColors.darkGreen,
                           decoration: InputDecoration(
                             labelText: 'List Name',
-                            labelStyle: GoogleFonts.roboto(),
-                            floatingLabelStyle: GoogleFonts.roboto(
+                            labelStyle: GoogleFonts.inter(),
+                            floatingLabelStyle: GoogleFonts.inter(
                               color: AppColors.darkGreen,
                             ),
                             border: const OutlineInputBorder(),
@@ -313,7 +313,7 @@ class _EditListScreenState extends State<EditListScreen> {
                         const SizedBox(height: 24),
                         Text(
                           'Games in this List',
-                          style: GoogleFonts.roboto(
+                          style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -328,7 +328,7 @@ class _EditListScreenState extends State<EditListScreen> {
                             padding: const EdgeInsets.only(bottom: 16),
                             child: Text(
                               _errorMessage!,
-                              style: GoogleFonts.roboto(color: Colors.red),
+                              style: GoogleFonts.inter(color: Colors.red),
                             ),
                           ),
                         ElevatedButton(
@@ -348,7 +348,7 @@ class _EditListScreenState extends State<EditListScreen> {
                                 )
                               : Text(
                                   'Save Changes',
-                                  style: GoogleFonts.roboto(
+                                  style: GoogleFonts.inter(
                                     color: AppColors.darkGreen,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -376,7 +376,7 @@ class _EditListScreenState extends State<EditListScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),

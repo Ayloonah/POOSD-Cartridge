@@ -50,7 +50,7 @@ class SplashScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Build your personal game library, organize custom lists, rate your games, and write reviews.',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   color: AppColors.textLight,
                 ),
@@ -71,7 +71,7 @@ class SplashScreen extends StatelessWidget {
                 },
                 child: Text(
                   'Log In',
-                  style: GoogleFonts.roboto(color: AppColors.textDark),
+                  style: GoogleFonts.inter(color: AppColors.textDark),
                 ),
               ),
               const SizedBox(height: 12),
@@ -86,7 +86,7 @@ class SplashScreen extends StatelessWidget {
                 },
                 child: Text(
                   'Register',
-                  style: GoogleFonts.roboto(color: AppColors.textLight),
+                  style: GoogleFonts.inter(color: AppColors.textLight),
                 ),
               ),
             ],

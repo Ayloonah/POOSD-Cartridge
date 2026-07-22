@@ -81,7 +81,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             children: [
               Text(
                 'Check your email, ${widget.username}!',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   color: AppColors.textLight,
                   fontWeight: FontWeight.bold,
@@ -92,7 +92,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               Text(
                 'We sent a verification link to ${widget.email}. After clicking on the link, come back and log in to start your Cartridge collection!',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.roboto(color: AppColors.textLight),
+                style: GoogleFonts.inter(color: AppColors.textLight),
               ),
               const SizedBox(height: 24),
               if (_resendMessage != null)
@@ -100,7 +100,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     _resendMessage!,
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.inter(
                       color: AppColors.textLight,
                       fontWeight: FontWeight.bold,
                     ),
@@ -139,7 +139,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         _cooldownSeconds > 0
                             ? 'Resend in ${_cooldownSeconds}s'
                             : 'Resend Verification Email',
-                        style: GoogleFonts.roboto(fontSize: 16),
+                        style: GoogleFonts.inter(fontSize: 16),
                       ),
               ),
               const SizedBox(height: 12),
@@ -154,7 +154,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 },
                 child: Text(
                   'Back to Login',
-                  style: GoogleFonts.roboto(color: AppColors.textLight),
+                  style: GoogleFonts.inter(color: AppColors.textLight),
                 ),
               ),
             ],

@@ -8,8 +8,11 @@ import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
 import '../widgets/game_card.dart';
 import '../widgets/list_card.dart';
+import '../models/collection_filters.dart';
 import 'add_game_screen.dart';
 import 'create_list_screen.dart';
+import 'collection_screen.dart';
+import 'game_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onSeeAllGames;
@@ -139,6 +142,38 @@ class HomeScreenState extends State<HomeScreen> {
     if (created == true) _loadDashboardData();
   }
 
+  // Opens a game's detail screen from its card, refreshing the dashboard on
+  // return in case it was edited or removed
+  Future<void> _openGameDetail(Map<String, dynamic> entry) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GameDetailScreen(
+          entry: entry,
+          availableLists: _availableLists,
+        ),
+      ),
+    );
+    if (mounted) _loadDashboardData();
+  }
+
+  // Opens a list's contents from its card, same destination as the Lists
+  // tab's own cards, refreshing the dashboard on return
+  Future<void> _openListContents(Map<String, dynamic> list) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CollectionScreen(
+          title: list['name']?.toString(),
+          initialFilters: CollectionFilters(
+            listIds: {list['listId'].toString()},
+          ),
+        ),
+      ),
+    );
+    if (mounted) _loadDashboardData();
+  }
+
   // The 4 most recently added games in this list, for the card's cover grid
   List<String?> _recentCoverImages(String listId) {
     final entries = _collectionEntries.where((entry) {
@@ -159,7 +194,7 @@ class HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -191,7 +226,7 @@ class HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                        style: GoogleFonts.inter(color: Colors.red),
                       ),
                     ),
                   _buildSection(
@@ -209,6 +244,7 @@ class HomeScreenState extends State<HomeScreen> {
                       hoursPlayed: (item['hoursPlayed'] as num?)?.toDouble(),
                       width: 138,
                       height: 212,
+                      onTap: () => _openGameDetail(item),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -227,6 +263,7 @@ class HomeScreenState extends State<HomeScreen> {
                         coverImages: _recentCoverImages(
                           item['listId'].toString(),
                         ),
+                        onTap: () => _openListContents(item),
                       ),
                     ),
                   ),
@@ -272,7 +309,7 @@ class HomeScreenState extends State<HomeScreen> {
               ),
               child: Text(
                 'See All',
-                style: GoogleFonts.roboto(
+                style: GoogleFonts.inter(
                   color: AppColors.darkGreen,
                   fontWeight: FontWeight.w600,
                 ),
@@ -286,7 +323,7 @@ class HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Column(
               children: [
-                Text(emptyMessage, style: GoogleFonts.roboto()),
+                Text(emptyMessage, style: GoogleFonts.inter()),
                 const SizedBox(height: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -296,7 +333,7 @@ class HomeScreenState extends State<HomeScreen> {
                   onPressed: onEmptyButtonPressed,
                   child: Text(
                     emptyButtonLabel,
-                    style: GoogleFonts.roboto(color: AppColors.textLight),
+                    style: GoogleFonts.inter(color: AppColors.textLight),
                   ),
                 ),
               ],

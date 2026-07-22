@@ -152,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Text(
                       'If an account exists for that email, a password reset link has been sent.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 16),
                     if (_errorMessage != null)
@@ -189,7 +189,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               _cooldownSeconds > 0
                                   ? 'Resend in ${_cooldownSeconds}s'
                                   : 'Resend Reset Link',
-                              style: GoogleFonts.roboto(fontSize: 16),
+                              style: GoogleFonts.inter(fontSize: 16),
                             ),
                     ),
                     const SizedBox(height: 12),
@@ -198,7 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         onPressed: _backToLogin,
                         child: Text(
                           'Back to Login',
-                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                          style: GoogleFonts.inter(color: AppColors.textLight),
                         ),
                       ),
                     ),
@@ -207,14 +207,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     Text(
                       'Enter your email address and we\'ll send you a link to reset your password.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                     const SizedBox(height: 20),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Email Address',
-                        style: GoogleFonts.roboto(
+                        style: GoogleFonts.inter(
                           color: AppColors.textLight,
                           fontSize: 14,
                         ),
@@ -224,12 +224,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     TextField(
                       controller: _emailController,
                       focusNode: _emailFocusNode,
-                      style: GoogleFonts.roboto(color: Colors.black87),
+                      style: GoogleFonts.inter(color: Colors.black87),
                       decoration: InputDecoration(
                         hintText: 'Email Address',
-                        hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                        hintStyle: GoogleFonts.inter(color: Colors.black45),
                         filled: true,
-                        fillColor: AppColors.lightGreen,
+                        fillColor: AppColors.textBoxFill,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 14,
@@ -274,7 +274,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             )
                           : Text(
                               'Send Reset Link',
-                              style: GoogleFonts.roboto(fontSize: 16),
+                              style: GoogleFonts.inter(fontSize: 16),
                             ),
                     ),
                     const SizedBox(height: 12),
@@ -283,7 +283,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         onPressed: _backToLogin,
                         child: Text(
                           'Back to Login',
-                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                          style: GoogleFonts.inter(color: AppColors.textLight),
                         ),
                       ),
                     ),
