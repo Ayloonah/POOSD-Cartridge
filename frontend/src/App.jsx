@@ -6,6 +6,7 @@ import ListView from './pages/ListView';
 import GameSearchPage from './pages/GameSearchPage';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
+import VerifyEmail from './pages/VerifyEmail';
 
 
 export default function App() {
@@ -17,8 +18,9 @@ export default function App() {
           
           <Route path="/dashboard" element={<HomePage />} />
           
-          <Route path="/search" element={<GameSearchPage />} />
+          <Route path="/collection" element={<GameSearchPage />} />
           <Route path="/lists" element={<ListView />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Routes>
       </Router>
     </AuthProvider>

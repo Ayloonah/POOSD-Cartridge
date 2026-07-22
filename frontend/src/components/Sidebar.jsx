@@ -1,7 +1,27 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import logoImage from '../assets/Menu & Fab.png';
 
 export default function Sidebar() {
+  const location = useLocation();
+
+  const getNavStyle = (path) => {
+    const isActive = location.pathname === path;
+    return {
+      backgroundColor: isActive ? '#98B910' : 'transparent',
+      color: isActive ? '#143910' : '#FFFFFF',
+      padding: '8px 40px',
+      borderRadius: '20px',
+      fontSize: '24px',
+      cursor: 'pointer',
+      letterSpacing: '1px',
+      textDecoration: 'none',
+      textAlign: 'center',
+      width: '100%',
+      boxSizing: 'border-box'
+    };
+  };
+
   return (
     <aside style={{ 
       width: '220px', 
@@ -12,47 +32,30 @@ export default function Sidebar() {
       padding: '32px 0', 
       flexShrink: 0 
     }}>
-      
       <img 
         src={logoImage} 
         alt="Cartridge Logo" 
-        style={{ 
-          width: '80px', 
-          height: 'auto', 
-          marginBottom: '64px',
-          // border: '4px solid #143910', backgroundColor: '#98B910'
-        }} 
+        style={{ width: '80px', height: 'auto', marginBottom: '64px' }} 
       />
 
-      {/* Navigation */}
       <nav style={{ 
         width: '100%', 
         display: 'flex', 
         flexDirection: 'column', 
         gap: '24px', 
-        alignItems: 'center' 
+        alignItems: 'center',
+        padding: '0 16px',
+        boxSizing: 'border-box'
       }}>
-        <div className="font-vt323" style={{ 
-          backgroundColor: '#98B910', 
-          color: '#143910', 
-          padding: '8px 40px', 
-          borderRadius: '20px', 
-          fontSize: '24px', 
-          cursor: 'pointer', 
-          letterSpacing: '1px' 
-        }}>
+        <Link to="/dashboard" className="font-vt323" style={getNavStyle('/dashboard')}>
           Home
-        </div>
-        
-        <div className="font-vt323" style={{ color: '#FFFFFF', fontSize: '24px', cursor: 'pointer', letterSpacing: '1px' }}>
-          Collections
-        </div>
-        <div className="font-vt323" style={{ color: '#FFFFFF', fontSize: '24px', cursor: 'pointer', letterSpacing: '1px' }}>
-          Profile
-        </div>
-        <div className="font-vt323" style={{ color: '#FFFFFF', fontSize: '24px', cursor: 'pointer', letterSpacing: '1px' }}>
-          Settings
-        </div>
+        </Link>
+        <Link to="/collection" className="font-vt323" style={getNavStyle('/collection')}>
+          Collection
+        </Link>
+        <Link to="/lists" className="font-vt323" style={getNavStyle('/lists')}>
+          Lists
+        </Link>
       </nav>
     </aside>
   );

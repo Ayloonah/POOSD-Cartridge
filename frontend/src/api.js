@@ -43,6 +43,20 @@ export const api = {
     });
   },
 
+  // patch() 
+  patch: async (endpoint, body, token = null) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return fetch(`${BASE_URL}${endpoint}`, {
+      method: 'PATCH',
+      headers: headers,
+      body: JSON.stringify(body),
+    });
+  },
+
   // delete()
   delete: async (endpoint, token = null) => {
     const headers = {};
