@@ -12,6 +12,8 @@ const { sendVerificationEmail } = require('../utils/email');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { availableMemory } = require('process');
 
+const { checkPasswordComplexity } = require('../utils/passwordComplexity')
+
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body
@@ -104,6 +106,15 @@ exports.register = async(req, res) => {
             return res.status(400).json ({ message: 'Please fill out all fields' });
         }
 
+        if (password !== confirmPassword) {
+            return res.status(400).json ({ message: 'Passwords do NOT match' });
+        }
+
+        const isValidComplexity = await checkPasswordComplexity(password);
+        if (!isValidComplexity) {
+            return res.status(400).json({ message: "Password does not meet criteria." })
+        }
+
         const usernameExist = await User.findOne({ username: { $regex: `^${username.trim()}$`, $options: 'i'} 
         });
 
@@ -115,10 +126,6 @@ exports.register = async(req, res) => {
         const emailExists = await User.findOne({ email: email.toLowerCase() });
         if (emailExists) {
             return res.status(400).json({ message: 'Account already exists. Please sign in.' });
-        }
-
-        if (password !== confirmPassword) {
-            return res.status(400).json ({ message: 'Passwords do NOT match' });
         }
 
         const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -211,6 +218,11 @@ exports.resetPassword = async (req, res) => {
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired reset token.' })
+        }
+
+        const isValidComplexity = await checkPasswordComplexity(newPassword);
+        if (!isValidComplexity) {
+            return res.status(400).json({ message: "Password does not meet criteria." })
         }
 
         const newMatchesOld = await matchesOldPassword (newPassword, user.passwordHash);
@@ -436,16 +448,25 @@ exports.account = async (req, res) => {
 
         if (newPassword) {
             const { currentPassword } = req.body;
-            const { newPassword } = req.body;
+            //const { newPassword } = req.body;
             const { confirmNewPassword } = req.body;
 
             if (!currentPassword) {
                 return res.status(400).json({ message: "Current password is required to change your password." })
             }
 
+            if (newPassword !== confirmNewPassword) {
+                return res.status(400).json({ message: "Passwords do NOT match!" });
+            }
+
             const isMatch = await verifyPassword(currentPassword, user.passwordHash);
             if (!isMatch) {
                 return res.status(400).json({ message: "Incorrect current password. Action denied." });
+            }
+
+            const isValidComplexity = await checkPasswordComplexity(newPassword);
+            if (!isValidComplexity) {
+                return res.status(400).json({ message: "Password does not meet criteria." })
             }
 
             user.passwordHash = await hashPassword(newPassword);
