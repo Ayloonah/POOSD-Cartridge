@@ -4,7 +4,7 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 
 function App() {
   return (
-    <GameSearchPage />
+    <ProfileSettingsPage/>
   );
 }
 
