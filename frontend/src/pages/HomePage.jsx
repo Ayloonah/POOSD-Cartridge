@@ -53,19 +53,16 @@ export default function HomePage() {
   const { token } = useContext(AuthContext); 
   const currentToken = token || localStorage.getItem('token'); 
 
-  // Modal visibility states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [entryToEdit, setEntryToEdit] = useState(null); 
   const [listToEdit, setListToEdit] = useState(null);
 
-  // Bridge memory for list creation state while adding a game on the fly
   const [tempListName, setTempListName] = useState('');
   const [tempSelectedEntryIds, setTempSelectedEntryIds] = useState([]);
   const [returnToListModal, setReturnToListModal] = useState(false);
   
-  // 🟢 Bridge memory for editing a list while adding a game on the fly
   const [editListDraft, setEditListDraft] = useState(null);
 
   const [allGames, setAllGames] = useState([]); 
@@ -86,7 +83,7 @@ export default function HomePage() {
         
         normalizedEntries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setAllGames(normalizedEntries);
-        setRecentGames(normalizedEntries.slice(0, 5));
+        setRecentGames(normalizedEntries.slice(0, 10));
       }
 
       const listsRes = await api.get('/lists', currentToken);
@@ -102,7 +99,7 @@ export default function HomePage() {
         );
 
         setMyLists(sortedLists);
-        setRecentLists(sortedLists.slice(0, 5));
+        setRecentLists(sortedLists.slice(0, 10));
       }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -126,7 +123,6 @@ export default function HomePage() {
         onClose={() => {
           setIsAddModalOpen(false);
 
-          // 🟢 Restore Edit List Modal if applicable
           if (editListDraft) {
             setListToEdit(editListDraft.list);
           } else if (returnToListModal) {
@@ -137,17 +133,14 @@ export default function HomePage() {
         onSaveSuccess={(newEntryData) => {
           fetchDashboardData();
           
-          // Ensure we extract the pure string ID regardless of what the AddGameModal passed back
           const finalEntryId = typeof newEntryData === 'object' 
             ? (newEntryData?._id || newEntryData?.entryId) 
             : newEntryData;
 
-          // Push the new game to the Create List draft
           if (returnToListModal && finalEntryId) {
             setTempSelectedEntryIds(prev => [...prev, finalEntryId]);
           }
 
-          // 🟢 Push the new game to the Edit List draft
           if (editListDraft && finalEntryId) {
             setEditListDraft(prev => ({
               ...prev,
@@ -195,7 +188,6 @@ export default function HomePage() {
         onListUpdated={() => fetchDashboardData()}
         onListDeleted={() => fetchDashboardData()}
         onOpenAddGameModal={(draft) => {
-          // 🟢 Save progress locally, close list, open add game
           setEditListDraft(draft);
           setListToEdit(null);
           setIsAddModalOpen(true);

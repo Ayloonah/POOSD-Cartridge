@@ -9,6 +9,7 @@ import Sidebar from './Sidebar';
 import profileIcon from '../assets/Generic avatar.svg';
 import searchIcon from '../assets/search.svg';
 import { AuthContext } from '../context/AuthContext';
+import { api } from '../api';
 
 export default function DashboardLayout({
   children,
@@ -18,12 +19,42 @@ export default function DashboardLayout({
   searchPlaceholder = 'Search your collection...',
   onSearchSubmit
 }) {
-  const [isDropdownOpen, setIsDropdownOpen] =
-    useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState(() => localStorage.getItem('pendingEmail'));
+  const [isResending, setIsResending] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState(null);
 
-  const { logout } = useContext(AuthContext);
+  const { token, logout } = useContext(AuthContext);
+  const currentToken = token || localStorage.getItem('token');
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+
+  // 🟢 Re-verify status against /auth/me on every layout mount / page navigation
+  useEffect(() => {
+    const checkVerificationStatus = async () => {
+      if (!currentToken) return;
+
+      try {
+        const response = await api.get('/auth/me', currentToken);
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.pendingEmail) {
+            setPendingEmail(data.pendingEmail);
+            localStorage.setItem('pendingEmail', data.pendingEmail);
+          } else {
+            // Clean up localStorage and state if pendingEmail is now null/verified
+            setPendingEmail(null);
+            localStorage.removeItem('pendingEmail');
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check verification status:", err);
+      }
+    };
+
+    checkVerificationStatus();
+  }, [currentToken, navigate]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -48,6 +79,24 @@ export default function DashboardLayout({
     };
   }, []);
 
+  const handleResendVerification = async () => {
+    try {
+      setIsResending(true);
+      setBannerMessage(null);
+      const response = await api.post('/auth/resendEmailVerification', { email: pendingEmail }, currentToken);
+      const data = await response.json();
+      if (response.ok) {
+        setBannerMessage({ type: 'success', text: data.message || 'Verification email resent successfully! Check your inbox.' });
+      } else {
+        setBannerMessage({ type: 'error', text: data.message || 'Failed to resend verification email.' });
+      }
+    } catch (err) {
+      setBannerMessage({ type: 'error', text: 'Network error trying to resend email.' });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleLogout = () => {
     if (logout) {
       logout();
@@ -55,6 +104,7 @@ export default function DashboardLayout({
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       localStorage.removeItem('email');
+      localStorage.removeItem('pendingEmail');
     }
 
     navigate('/');
@@ -330,6 +380,56 @@ export default function DashboardLayout({
             )}
           </div>
         </header>
+
+        {/* Site-Wide Wider Verification Banner */}
+        {pendingEmail && (
+          <div
+            style={{
+              width: '100%',
+              backgroundColor: '#fef3c7',
+              color: '#92400e',
+              padding: '12px 40px',
+              fontSize: '14px',
+              fontWeight: '500',
+              borderBottom: '1px solid #fde68a',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxSizing: 'border-box',
+              flexShrink: 0,
+              zIndex: 50
+            }}
+          >
+            <span>
+              ⚠️ Verification pending for <strong>{pendingEmail}</strong>. Please check your inbox to confirm your new email address.
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {bannerMessage && (
+                <span style={{ fontSize: '13px', color: bannerMessage.type === 'success' ? '#065f46' : '#991b1b', fontWeight: '600' }}>
+                  {bannerMessage.text}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                style={{
+                  backgroundColor: '#d97706',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {isResending ? 'Sending...' : 'Resend Email'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <main
           style={{

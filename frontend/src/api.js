@@ -58,15 +58,19 @@ export const api = {
   },
 
   // delete()
-  delete: async (endpoint, token = null) => {
+  delete: async (endpoint, token = null, body = null) => {
     const headers = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (body) {
+      headers['Content-Type'] = 'application/json';
     }
 
     return fetch(`${BASE_URL}${endpoint}`, {
       method: 'DELETE',
       headers: headers,
+      body: body ? JSON.stringify(body) : null,
     });
-  }
+  },
 };

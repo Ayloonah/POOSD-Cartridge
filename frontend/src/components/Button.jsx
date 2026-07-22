@@ -16,7 +16,7 @@ export default function Button({ children, variant = 'primary', style, onClick, 
     primary: { backgroundColor: '#143910', color: '#FFFFFF' },
     secondary: { backgroundColor: '#98B910', color: '#143910' },
     tertiary: { backgroundColor: '#E5E7EB', color: '#111827' },
-    danger: { backgroundColor: '#DC2626', color: '#FFFFFF' }, // 🔴 Added Danger Variant
+    danger: { backgroundColor: '#DC2626', color: '#FFFFFF' }, 
   };
 
   return (

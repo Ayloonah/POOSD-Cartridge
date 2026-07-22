@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import FeatureCard from '../components/FeatureCard';
 import Button from '../components/Button';
 import AuthModal from '../components/AuthModal';
 
 export default function LandingPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('login'); 
+
+  // 🟢 Automatically open modal if ?openModal=login is in the URL
+  useEffect(() => {
+    const modalParam = searchParams.get('openModal');
+    if (modalParam === 'login') {
+      setModalMode('login');
+      setIsModalOpen(true);
+      // Clean up the URL parameter so refreshing doesn't keep reopening it
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   const openLogin = () => {
     setModalMode('login');

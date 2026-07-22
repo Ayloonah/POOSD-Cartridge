@@ -45,7 +45,7 @@ export default function VerifyEmail() {
         fontSize: '32px', 
         textShadow: '3px 3px 0px #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000' 
       }}>
-          VERIFICATION STATUS
+          EMAIL VERIFIED: WELCOME GAMER
 
         </div>
         
@@ -54,8 +54,8 @@ export default function VerifyEmail() {
         </p>
 
         {status !== 'loading' && (
-          <Link to="/" style={{ backgroundColor: '#98B910', color: '#143910', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
-            Return to Home
+          <Link to="/?openModal=login" style={{ backgroundColor: '#98B910', color: '#143910', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
+            Sign In
           </Link>
         )}
       </div>

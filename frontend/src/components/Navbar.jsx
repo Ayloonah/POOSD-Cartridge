@@ -1,5 +1,6 @@
 import React from 'react';
 import Button from './Button';
+import cartridgeLogo from '../assets/CARTRIDGE.svg';
 
 export default function Navbar({ onOpenLogin, onOpenRegister }) {
   return (
@@ -10,12 +11,12 @@ export default function Navbar({ onOpenLogin, onOpenRegister }) {
       justifyContent: 'space-between', 
       alignItems: 'center'
     }}>
-      <div className="font-pixel" style={{ 
-        color: '#98B910', 
-        fontSize: '32px', 
-        textShadow: '3px 3px 0px #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000' 
-      }}>
-        CARTRIDGE
+      <div style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
+        <img 
+          src={cartridgeLogo} 
+          alt="CARTRIDGE" 
+          style={{ height: '60px', width: 'auto', display: 'block' }} 
+        />
       </div>
       <div style={{ display: 'flex', gap: '16px' }}>
         <Button variant="tertiary" onClick={onOpenLogin}>Sign in</Button>
