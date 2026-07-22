@@ -94,20 +94,24 @@ class _CreateListScreenState extends State<CreateListScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),
@@ -157,12 +161,12 @@ class _CreateListScreenState extends State<CreateListScreen> {
                 children: [
                   TextField(
                     controller: _nameController,
-                    style: GoogleFonts.roboto(),
+                    style: GoogleFonts.inter(),
                     cursorColor: AppColors.darkGreen,
                     decoration: InputDecoration(
                       labelText: 'List Name',
-                      labelStyle: GoogleFonts.roboto(),
-                      floatingLabelStyle: GoogleFonts.roboto(
+                      labelStyle: GoogleFonts.inter(),
+                      floatingLabelStyle: GoogleFonts.inter(
                         color: AppColors.darkGreen,
                       ),
                       border: const OutlineInputBorder(),
@@ -177,7 +181,7 @@ class _CreateListScreenState extends State<CreateListScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'Add Games (optional)',
-                    style: GoogleFonts.roboto(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                   ),
                   GameChecklist(
                     entries: widget.collectionEntries,
@@ -190,7 +194,7 @@ class _CreateListScreenState extends State<CreateListScreen> {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.roboto(color: Colors.red),
+                        style: GoogleFonts.inter(color: Colors.red),
                       ),
                     ),
                   ElevatedButton(
@@ -210,7 +214,7 @@ class _CreateListScreenState extends State<CreateListScreen> {
                           )
                         : Text(
                             'Create List',
-                            style: GoogleFonts.roboto(
+                            style: GoogleFonts.inter(
                               color: AppColors.darkGreen,
                               fontWeight: FontWeight.w600,
                             ),
@@ -238,7 +242,7 @@ class _CreateListScreenState extends State<CreateListScreen> {
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),

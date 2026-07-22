@@ -22,6 +22,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  // Pre-fill the email field if "Remember me" saved one last time
+  @override
+  void initState() {
+    super.initState();
+    final rememberedEmail =
+        Provider.of<AuthState>(context, listen: false).rememberedEmail;
+    if (rememberedEmail != null) {
+      _emailController.text = rememberedEmail;
+      _rememberMe = true;
+    }
+  }
+
   // Called automatically when screen is destroyed
   @override
   void dispose() {
@@ -35,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+  bool _rememberMe = true;
 
   bool _isFormValid() {
     return _emailController.text.trim().isNotEmpty &&
@@ -69,6 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
           rawToken,
           data['user']['id'].toString(),
           data['user']['email'],
+        );
+        await authState.setRememberedEmail(
+          _rememberMe ? _emailController.text.trim() : null,
         );
 
         if (!mounted) return;
@@ -131,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Text(
                   'Email Address',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.inter(
                     color: AppColors.textLight,
                     fontSize: 14,
                   ),
@@ -140,13 +156,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextField(
                   controller: _emailController,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.roboto(color: Colors.black87),
+                  style: GoogleFonts.inter(color: Colors.black87),
                   cursorColor: AppColors.darkGreen,
                   decoration: InputDecoration(
                     hintText: 'Email Address',
-                    hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                    hintStyle: GoogleFonts.inter(color: Colors.black45),
                     filled: true,
-                    fillColor: AppColors.lightGreen,
+                    fillColor: AppColors.textBoxFill,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -160,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'Password',
-                  style: GoogleFonts.roboto(
+                  style: GoogleFonts.inter(
                     color: AppColors.textLight,
                     fontSize: 14,
                   ),
@@ -170,13 +186,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.roboto(color: Colors.black87),
+                  style: GoogleFonts.inter(color: Colors.black87),
                   cursorColor: AppColors.darkGreen,
                   decoration: InputDecoration(
                     hintText: 'Password',
-                    hintStyle: GoogleFonts.roboto(color: Colors.black45),
+                    hintStyle: GoogleFonts.inter(color: Colors.black45),
                     filled: true,
-                    fillColor: AppColors.lightGreen,
+                    fillColor: AppColors.textBoxFill,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
@@ -200,22 +216,46 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordScreen(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      'Forgot Password?',
-                      style: GoogleFonts.roboto(color: AppColors.textLight),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    InkWell(
+                      onTap: () =>
+                          setState(() => _rememberMe = !_rememberMe),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            activeColor: AppColors.lightGreen,
+                            checkColor: AppColors.darkGreen,
+                            onChanged: (value) =>
+                                setState(() => _rememberMe = value ?? false),
+                          ),
+                          Text(
+                            'Remember me',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: GoogleFonts.inter(color: AppColors.textLight),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 if (_errorMessage != null)
@@ -248,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Text(
                                 'Sign In',
-                                style: GoogleFonts.roboto(fontSize: 16),
+                                style: GoogleFonts.inter(fontSize: 16),
                               ),
                               const SizedBox(width: 6),
                               const Icon(Icons.lock, size: 16),
@@ -272,7 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           'Register here',
-                          style: GoogleFonts.roboto(color: AppColors.textLight),
+                          style: GoogleFonts.inter(color: AppColors.textLight),
                         ),
                         const SizedBox(width: 4),
                         const Icon(

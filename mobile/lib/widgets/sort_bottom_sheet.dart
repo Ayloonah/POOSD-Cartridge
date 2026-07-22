@@ -26,7 +26,7 @@ class SortBottomSheet<T> extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               'Sort By',
-              style: GoogleFonts.roboto(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -34,7 +34,7 @@ class SortBottomSheet<T> extends StatelessWidget {
           ),
           for (final option in options)
             RadioListTile<T>(
-              title: Text(labelBuilder(option), style: GoogleFonts.roboto()),
+              title: Text(labelBuilder(option), style: GoogleFonts.inter()),
               value: option,
               groupValue: selected,
               activeColor: AppColors.lightGreen,

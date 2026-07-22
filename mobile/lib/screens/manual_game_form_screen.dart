@@ -60,7 +60,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
 
   // Hands the manually-entered game details off to the entry form, which
   // will send them as `newGame` when the entry gets created
-  void _continue() {
+  Future<void> _continue() async {
     final platforms = _splitCommaList(_platformsController.text);
     final coverImage = _coverImageController.text.trim();
     final developer = _developerController.text.trim();
@@ -74,7 +74,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
       'developers': developer.isEmpty ? <String>[] : [developer],
     };
 
-    Navigator.push(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => GameEntryFormScreen(
@@ -86,6 +86,12 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
         ),
       ),
     );
+    // Bubble the "saved" signal up through AddGameScreen too, same as the
+    // RAWG-search path, so it also pops back to wherever Add Game was
+    // opened from instead of leaving this filled-out form sitting exposed.
+    if (saved == true && mounted) {
+      Navigator.pop(context, true);
+    }
   }
 
   // A white input box whose border and floating label turn dark green
@@ -94,8 +100,8 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.roboto(),
-      floatingLabelStyle: GoogleFonts.roboto(color: AppColors.darkGreen),
+      labelStyle: GoogleFonts.inter(),
+      floatingLabelStyle: GoogleFonts.inter(color: AppColors.darkGreen),
       border: const OutlineInputBorder(),
       focusedBorder: const OutlineInputBorder(
         borderSide: BorderSide(color: AppColors.darkGreen, width: 2),
@@ -108,20 +114,24 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),
@@ -143,7 +153,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                   ),
                   label: Text(
                     'Go Back',
-                    style: GoogleFonts.roboto(
+                    style: GoogleFonts.inter(
                       color: AppColors.darkGreen,
                       fontWeight: FontWeight.w600,
                     ),
@@ -197,14 +207,14 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                           children: [
                             TextField(
                               controller: _nameController,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                               cursorColor: AppColors.darkGreen,
                               decoration: _fieldDecoration('Game Name'),
                             ),
                             const SizedBox(height: 16),
                             TextField(
                               controller: _coverImageController,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                               cursorColor: AppColors.darkGreen,
                               decoration: _fieldDecoration(
                                 'Cover Image URL (optional)',
@@ -213,7 +223,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                             const SizedBox(height: 16),
                             TextField(
                               controller: _genresController,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                               cursorColor: AppColors.darkGreen,
                               decoration: _fieldDecoration(
                                 'Genres (comma-separated, optional)',
@@ -222,7 +232,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                             const SizedBox(height: 16),
                             TextField(
                               controller: _platformsController,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                               cursorColor: AppColors.darkGreen,
                               decoration: _fieldDecoration(
                                 'Platforms (comma-separated, optional)',
@@ -231,7 +241,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                             const SizedBox(height: 16),
                             TextField(
                               controller: _developerController,
-                              style: GoogleFonts.roboto(),
+                              style: GoogleFonts.inter(),
                               cursorColor: AppColors.darkGreen,
                               decoration: _fieldDecoration(
                                 'Developer (optional)',
@@ -287,7 +297,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                                   _releaseDate == null
                                       ? 'Not set'
                                       : '${_releaseDate!.year}-${_releaseDate!.month.toString().padLeft(2, '0')}-${_releaseDate!.day.toString().padLeft(2, '0')}',
-                                  style: GoogleFonts.roboto(),
+                                  style: GoogleFonts.inter(),
                                 ),
                               ),
                             ),
@@ -302,7 +312,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
                                   : _continue,
                               child: Text(
                                 'Continue',
-                                style: GoogleFonts.roboto(
+                                style: GoogleFonts.inter(
                                   color: AppColors.darkGreen,
                                   fontWeight: FontWeight.w600,
                                 ),

@@ -8,7 +8,11 @@ import 'login_screen.dart';
 // Reached via the emailed verification link (?token=...). Confirms the
 // token with the backend, then lets the user head back to Login.
 class VerifyEmailConfirmScreen extends StatefulWidget {
-  const VerifyEmailConfirmScreen({super.key});
+  // Passed in directly when opened via an Android App Link; left null on
+  // web, where the token is read out of the page's own URL instead.
+  final String? token;
+
+  const VerifyEmailConfirmScreen({super.key, this.token});
 
   @override
   State<VerifyEmailConfirmScreen> createState() => _VerifyEmailConfirmScreenState();
@@ -24,7 +28,7 @@ class _VerifyEmailConfirmScreenState extends State<VerifyEmailConfirmScreen> {
   @override
   void initState() {
     super.initState();
-    _token = Uri.base.queryParameters['token'];
+    _token = widget.token ?? Uri.base.queryParameters['token'];
     if (_token == null) {
       _isVerifying = false;
       _message = 'This verification link is invalid or has expired.';
@@ -95,7 +99,7 @@ class _VerifyEmailConfirmScreenState extends State<VerifyEmailConfirmScreen> {
                           ? Text(
                               _message ?? '',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.roboto(
+                              style: GoogleFonts.inter(
                                 color: AppColors.textLight,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -118,7 +122,7 @@ class _VerifyEmailConfirmScreenState extends State<VerifyEmailConfirmScreen> {
                       onPressed: _backToLogin,
                       child: Text(
                         'Back to Login',
-                        style: GoogleFonts.roboto(fontSize: 16),
+                        style: GoogleFonts.inter(fontSize: 16),
                       ),
                     ),
                   ],

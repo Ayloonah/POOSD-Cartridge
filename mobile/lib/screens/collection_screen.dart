@@ -24,10 +24,10 @@ class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key, this.initialFilters, this.title});
 
   @override
-  State<CollectionScreen> createState() => _CollectionScreenState();
+  State<CollectionScreen> createState() => CollectionScreenState();
 }
 
-class _CollectionScreenState extends State<CollectionScreen> {
+class CollectionScreenState extends State<CollectionScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -53,6 +53,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
     _scrollController.addListener(_onScroll);
     _loadCollection();
   }
+
+  // Called by MainNavScreen when this tab is (re)selected — see the same
+  // note on HomeScreenState.refresh() for why this is necessary.
+  Future<void> refresh() => _loadCollection();
 
   @override
   void dispose() {
@@ -300,14 +304,16 @@ class _CollectionScreenState extends State<CollectionScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
+    int flex = 1,
   }) {
     return Expanded(
+      flex: flex,
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 18, color: AppColors.darkGreen),
         label: Text(
           label,
-          style: GoogleFonts.roboto(
+          style: GoogleFonts.inter(
             color: AppColors.darkGreen,
             fontWeight: FontWeight.w600,
           ),
@@ -334,26 +340,66 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(76),
         child: Container(
+          height: 76,
           color: AppColors.darkGreen,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SafeArea(
             bottom: false,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/cartridge_logo.png', height: 36),
-                const SizedBox(width: 12),
-                Image.asset('assets/images/little_logo.png', height: 28),
-              ],
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/cartridge_logo.png', height: 36),
+                  const SizedBox(width: 12),
+                  Image.asset('assets/images/little_logo.png', height: 28),
+                ],
+              ),
             ),
           ),
         ),
       ),
       body: Column(
         children: [
+          // Only shown when this screen is pushed as a specific list's
+          // filtered view (e.g. tapping a list card) rather than being the
+          // main Collection tab — which has nothing to go back to.
+          if (widget.title != null)
+            Container(
+              color: AppColors.darkGreen,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      size: 18,
+                      color: AppColors.darkGreen,
+                    ),
+                    label: Text(
+                      'Go Back',
+                      style: GoogleFonts.inter(
+                        color: AppColors.darkGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.lightGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Container(
             color: AppColors.darkGreen,
             child: Column(
@@ -363,15 +409,15 @@ class _CollectionScreenState extends State<CollectionScreen> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    style: GoogleFonts.inter(color: AppColors.darkGreen),
                     decoration: InputDecoration(
                       hintText: 'Search your collection',
-                      hintStyle: GoogleFonts.roboto(
+                      hintStyle: GoogleFonts.inter(
                         color: AppColors.darkGreen.withOpacity(0.6),
                       ),
                       isDense: true,
                       filled: true,
-                      fillColor: AppColors.lightGreen,
+                      fillColor: AppColors.textBoxFill,
                       prefixIcon: Icon(
                         Icons.search,
                         color: AppColors.darkGreen,
@@ -403,6 +449,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                         icon: Icons.add,
                         label: 'Add Game',
                         onPressed: _openAddGame,
+                        flex: 2,
                       ),
                       const SizedBox(width: 8),
                       _actionButton(
@@ -439,7 +486,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                   padding: const EdgeInsets.all(16.0),
                                   child: Text(
                                     _errorMessage!,
-                                    style: GoogleFonts.roboto(
+                                    style: GoogleFonts.inter(
                                       color: Colors.red,
                                     ),
                                   ),
@@ -451,7 +498,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                     children: [
                                       Text(
                                         'No games in your collection yet.',
-                                        style: GoogleFonts.roboto(),
+                                        style: GoogleFonts.inter(),
                                       ),
                                       const SizedBox(height: 12),
                                       ElevatedButton(
@@ -462,7 +509,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                         onPressed: _openAddGame,
                                         child: Text(
                                           'Add a Game',
-                                          style: GoogleFonts.roboto(),
+                                          style: GoogleFonts.inter(),
                                         ),
                                       ),
                                     ],
@@ -551,7 +598,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                     child: Center(
                                       child: Text(
                                         "You've reached the end of your collection.",
-                                        style: GoogleFonts.roboto(
+                                        style: GoogleFonts.inter(
                                           color: Colors.grey,
                                         ),
                                       ),

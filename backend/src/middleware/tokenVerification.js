@@ -24,6 +24,18 @@ function authenticateToken(req, res, next) {
             return res.status(403).json({ message: 'Invalid or expired token' });
         }
         req.user = decoded;
+
+        // Sliding session: reissue a fresh 20-minute token on every
+        // authenticated request, so an active user never gets logged out,
+        // while a genuinely inactive one has their last token actually
+        // expire after 20 minutes. Clients apply this transparently.
+        const refreshedToken = jwt.sign(
+            { userId: decoded.userId, role: decoded.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '20m' }
+        );
+        res.setHeader('X-Refreshed-Token', refreshedToken);
+
         next();
     });
 }
