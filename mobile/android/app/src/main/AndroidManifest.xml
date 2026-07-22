@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mobile"
+        android:label="Cartridge"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -23,6 +23,21 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- App Links: password-reset and email-verification links open
+                 straight into the app instead of a browser, once
+                 https://cartridgeapp.fun/.well-known/assetlinks.json is
+                 hosted and verified. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="cartridgeapp.fun"
+                      android:pathPrefix="/reset-password"/>
+                <data android:scheme="https"
+                      android:host="cartridgeapp.fun"
+                      android:pathPrefix="/verify-email"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

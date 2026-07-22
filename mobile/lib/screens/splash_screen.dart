@@ -17,14 +17,20 @@ class SplashScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 90),
-                  const SizedBox(width: 8),
-                  Image.asset('assets/images/little_logo.png', height: 75),
-                ],
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/cartridge_logo.png',
+                      height: 90,
+                    ),
+                    const SizedBox(width: 8),
+                    Image.asset('assets/images/little_logo.png', height: 75),
+                  ],
+                ),
               ),
               //Image.asset('assets/images/cartridge_logo.png', height: 90),
               /*const Text(
