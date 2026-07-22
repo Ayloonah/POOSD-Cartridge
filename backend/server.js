@@ -33,20 +33,25 @@ apiRouter.use("/lists", listRoutes)
 apiRouter.use("/games", gameRoutes);
 apiRouter.use("/user-game-entries", userGameEntryRoutes);
 app.use("/api", apiRouter);
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected");
+// Connect to MongoDB and start listening — skipped when this file is
+// require()'d (e.g. by auth.test.js importing `app`) rather than run directly,
+// so tests can manage their own connection/lifecycle instead of opening a
+// second one and binding the port.
+if (require.main === module) {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => {
+      console.log("MongoDB connected");
 
-    const PORT = process.env.PORT || 5000;
+      const PORT = process.env.PORT || 5000;
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("MongoDB connection error:", err);
     });
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error:", err);
-  });
+}
 
-  module.exports = app;
+module.exports = app;
