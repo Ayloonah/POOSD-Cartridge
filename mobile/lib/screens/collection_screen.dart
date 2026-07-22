@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../models/collection_sort_option.dart';
@@ -8,6 +10,7 @@ import '../models/collection_filters.dart';
 import '../widgets/game_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../widgets/filter_bottom_sheet.dart';
+import '../utils/api_normalize.dart';
 import 'game_detail_screen.dart';
 import 'add_game_screen.dart';
 
@@ -36,8 +39,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
   CollectionSortOption _sortOption = CollectionSortOption.dateAddedNewest;
   CollectionFilters _filters = const CollectionFilters();
+  String _searchQuery = '';
 
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -53,7 +58,16 @@ class _CollectionScreenState extends State<CollectionScreen> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _visibleCount = _pageSize;
+      _applySortAndFilter();
+    });
   }
 
   // Reveal 10 more cards once the user nears the bottom of the grid
@@ -62,8 +76,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
         _scrollController.position.maxScrollExtent - 200) {
       if (_visibleCount < _filteredSortedEntries.length) {
         setState(() {
-          _visibleCount =
-              (_visibleCount + _pageSize).clamp(0, _filteredSortedEntries.length);
+          _visibleCount = (_visibleCount + _pageSize).clamp(
+            0,
+            _filteredSortedEntries.length,
+          );
         });
       }
     }
@@ -80,22 +96,32 @@ class _CollectionScreenState extends State<CollectionScreen> {
       final token = Provider.of<AuthState>(context, listen: false).token;
       final apiService = ApiService();
 
-      final entriesResponse = await apiService.get('/gameuserentries', token: token);
+      final entriesResponse = await apiService.get(
+        '/user-game-entries/collection',
+        token: token,
+      );
       final listsResponse = await apiService.get('/lists', token: token);
 
       if (!mounted) return;
 
       final entries = entriesResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(entriesResponse.body))
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(entriesResponse.body),
+            ).map(normalizeEntry).toList()
           : <Map<String, dynamic>>[];
       final lists = listsResponse.statusCode == 200
-          ? List<Map<String, dynamic>>.from(jsonDecode(listsResponse.body))
+          ? List<Map<String, dynamic>>.from(
+              jsonDecode(listsResponse.body),
+            ).map(normalizeList).toList()
           : <Map<String, dynamic>>[];
 
       setState(() {
         _allEntries = entries;
         _availableLists = lists
-            .map((list) => MapEntry(list['listId'].toString(), list['name'].toString()))
+            .map(
+              (list) =>
+                  MapEntry(list['listId'].toString(), list['name'].toString()),
+            )
             .toList();
         _visibleCount = _pageSize;
         _applySortAndFilter();
@@ -118,9 +144,15 @@ class _CollectionScreenState extends State<CollectionScreen> {
   // Recomputes the visible list from _allEntries based on current filters + sort
   void _applySortAndFilter() {
     final result = _allEntries.where((entry) {
+      final query = _searchQuery.trim().toLowerCase();
+      if (query.isNotEmpty) {
+        final name = (entry['name'] ?? '').toString().toLowerCase();
+        if (!name.contains(query)) return false;
+      }
       if (_filters.listIds.isNotEmpty) {
         final entryListIds =
-            (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ?? {};
+            (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ??
+            {};
         if (entryListIds.intersection(_filters.listIds).isEmpty) return false;
       }
       if (_filters.playedFilter != null) {
@@ -137,7 +169,12 @@ class _CollectionScreenState extends State<CollectionScreen> {
         }
       }
       if (_filters.developers.isNotEmpty) {
-        if (!_filters.developers.contains(entry['developer'])) return false;
+        final entryDevelopers =
+            (entry['developers'] as List?)?.map((d) => d.toString()).toSet() ??
+            {};
+        if (entryDevelopers.intersection(_filters.developers).isEmpty) {
+          return false;
+        }
       }
       if (_filters.genres.isNotEmpty) {
         final entryGenres =
@@ -150,31 +187,33 @@ class _CollectionScreenState extends State<CollectionScreen> {
     result.sort((a, b) {
       switch (_sortOption) {
         case CollectionSortOption.dateAddedNewest:
-          return DateTime.parse(b['createdAt']).compareTo(DateTime.parse(a['createdAt']));
+          return DateTime.parse(
+            b['createdAt'],
+          ).compareTo(DateTime.parse(a['createdAt']));
         case CollectionSortOption.dateAddedOldest:
-          return DateTime.parse(a['createdAt']).compareTo(DateTime.parse(b['createdAt']));
+          return DateTime.parse(
+            a['createdAt'],
+          ).compareTo(DateTime.parse(b['createdAt']));
         case CollectionSortOption.titleAZ:
-          return (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString());
+          return (a['name'] ?? '').toString().compareTo(
+            (b['name'] ?? '').toString(),
+          );
         case CollectionSortOption.titleZA:
-          return (b['name'] ?? '').toString().compareTo((a['name'] ?? '').toString());
+          return (b['name'] ?? '').toString().compareTo(
+            (a['name'] ?? '').toString(),
+          );
         case CollectionSortOption.ratingHighToLow:
-          return ((b['rating'] ?? 0) as num).compareTo((a['rating'] ?? 0) as num);
+          return ((b['rating'] ?? 0) as num).compareTo(
+            (a['rating'] ?? 0) as num,
+          );
         case CollectionSortOption.ratingLowToHigh:
-          return ((a['rating'] ?? 0) as num).compareTo((b['rating'] ?? 0) as num);
+          return ((a['rating'] ?? 0) as num).compareTo(
+            (b['rating'] ?? 0) as num,
+          );
       }
     });
 
     _filteredSortedEntries = result;
-  }
-
-  // Distinct, sorted values for a flat string field (e.g. developer)
-  List<String> _distinctValues(String key) {
-    final values = <String>{};
-    for (final entry in _allEntries) {
-      final value = entry[key];
-      if (value != null && value.toString().isNotEmpty) values.add(value.toString());
-    }
-    return values.toList()..sort();
   }
 
   // Distinct, sorted values for a list-of-strings field (e.g. genres)
@@ -240,7 +279,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
       builder: (context) => FilterBottomSheet(
         current: _filters,
         availableLists: _availableLists,
-        availableDevelopers: _distinctValues('developer'),
+        availableDevelopers: _distinctListValues('developers'),
         availableGenres: _distinctListValues('genres'),
         minReleaseYear: minYear,
         maxReleaseYear: maxYear,
@@ -255,126 +294,280 @@ class _CollectionScreenState extends State<CollectionScreen> {
     }
   }
 
+  // A light-green pill button used for Add Game / Sort / Filter, matching
+  // the app's dark-green-on-light-green treatment used elsewhere
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Expanded(
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
+        label: Text(
+          label,
+          style: GoogleFonts.roboto(
+            color: AppColors.darkGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightGreen,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
   // Screen contents
   @override
   Widget build(BuildContext context) {
     final visible = _filteredSortedEntries.take(_visibleCount).toList();
     final reachedEnd =
-        _visibleCount >= _filteredSortedEntries.length && _filteredSortedEntries.isNotEmpty;
+        _visibleCount >= _filteredSortedEntries.length &&
+        _filteredSortedEntries.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title ?? 'Collection'),
-        actions: [
-          IconButton(icon: const Icon(Icons.add), onPressed: _openAddGame),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.darkGreen,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/cartridge_logo.png', height: 36),
+                const SizedBox(width: 12),
+                Image.asset('assets/images/little_logo.png', height: 28),
+              ],
+            ),
+          ),
+        ),
       ),
-      floatingActionButton: Row(
-        mainAxisSize: MainAxisSize.min,
+      body: Column(
         children: [
-          FloatingActionButton.small(
-            heroTag: 'sortFab',
-            onPressed: _openSortSheet,
-            child: const Icon(Icons.sort),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton.small(
-            heroTag: 'filterFab',
-            onPressed: _openFilterSheet,
-            child: const Icon(Icons.filter_list),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadCollection,
-              child: _allEntries.isEmpty
-                  ? ListView(
-                      children: [
-                        if (_errorMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red),
+          Container(
+            color: AppColors.darkGreen,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    style: GoogleFonts.roboto(color: AppColors.darkGreen),
+                    decoration: InputDecoration(
+                      hintText: 'Search your collection',
+                      hintStyle: GoogleFonts.roboto(
+                        color: AppColors.darkGreen.withOpacity(0.6),
+                      ),
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.lightGreen,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: AppColors.darkGreen,
+                      ),
+                      suffixIcon: _searchQuery.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                color: AppColors.darkGreen,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged('');
+                              },
                             ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                const Text('No games in your collection yet.'),
-                                const SizedBox(height: 12),
-                                ElevatedButton(
-                                  onPressed: _openAddGame,
-                                  child: const Text('Add a Game'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      _actionButton(
+                        icon: Icons.add,
+                        label: 'Add Game',
+                        onPressed: _openAddGame,
+                      ),
+                      const SizedBox(width: 8),
+                      _actionButton(
+                        icon: Icons.sort,
+                        label: 'Sort',
+                        onPressed: _openSortSheet,
+                      ),
+                      const SizedBox(width: 8),
+                      _actionButton(
+                        icon: Icons.filter_list,
+                        label: 'Filter',
+                        onPressed: _openFilterSheet,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.lightGreen,
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadCollection,
+                    child: _allEntries.isEmpty
+                        ? ListView(
+                            children: [
+                              if (_errorMessage != null)
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: GoogleFonts.roboto(
+                                      color: Colors.red,
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                          sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.65,
-                            ),
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final entry = visible[index];
-                                return GameCard(
-                                  title: entry['name']?.toString() ?? '',
-                                  imageUrl: entry['coverImage']?.toString(),
-                                  rating: (entry['rating'] as num?)?.toDouble(),
-                                  platformPlayed: entry['platformPlayed']?.toString(),
-                                  hoursPlayed: (entry['hoursPlayed'] as num?)?.toDouble(),
-                                  onTap: () async {
-                                    final changed = await Navigator.push<bool>(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => GameDetailScreen(
-                                          entry: entry,
-                                          availableLists: _availableLists,
+                              Padding(
+                                padding: const EdgeInsets.all(32.0),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        'No games in your collection yet.',
+                                        style: GoogleFonts.roboto(),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.lightGreen,
+                                          foregroundColor: AppColors.darkGreen,
+                                        ),
+                                        onPressed: _openAddGame,
+                                        child: Text(
+                                          'Add a Game',
+                                          style: GoogleFonts.roboto(),
                                         ),
                                       ),
-                                    );
-                                    if (changed == true) {
-                                      _loadCollection();
-                                    }
-                                  },
-                                );
-                              },
-                              childCount: visible.length,
-                            ),
-                          ),
-                        ),
-                        if (reachedEnd)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: Center(
-                                child: Text(
-                                  "You've reached the end of your collection.",
-                                  style: TextStyle(color: Colors.grey),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
+                          )
+                        : CustomScrollView(
+                            controller: _scrollController,
+                            slivers: [
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  12,
+                                  12,
+                                  0,
+                                ),
+                                sliver: SliverGrid(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 12,
+                                        crossAxisSpacing: 12,
+                                        childAspectRatio: 0.65,
+                                      ),
+                                  delegate: SliverChildBuilderDelegate((
+                                    context,
+                                    index,
+                                  ) {
+                                    final entry = visible[index];
+                                    return GameCard(
+                                      title: entry['name']?.toString() ?? '',
+                                      imageUrl: entry['coverImage']?.toString(),
+                                      rating: (entry['rating'] as num?)
+                                          ?.toDouble(),
+                                      platformPlayed: entry['platformPlayed']
+                                          ?.toString(),
+                                      hoursPlayed:
+                                          (entry['hoursPlayed'] as num?)
+                                              ?.toDouble(),
+                                      onTap: () async {
+                                        final result =
+                                            await Navigator.push<Object?>(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    GameDetailScreen(
+                                                      entry: entry,
+                                                      availableLists:
+                                                          _availableLists,
+                                                    ),
+                                              ),
+                                            );
+                                        if (result is Map<String, dynamic>) {
+                                          // Edited: patch just this entry instead of
+                                          // reloading the whole collection.
+                                          setState(() {
+                                            final index = _allEntries
+                                                .indexWhere(
+                                                  (e) =>
+                                                      e['entryId']
+                                                          ?.toString() ==
+                                                      result['entryId']
+                                                          ?.toString(),
+                                                );
+                                            if (index != -1) {
+                                              _allEntries[index] = result;
+                                            }
+                                            _applySortAndFilter();
+                                          });
+                                        } else if (result == true) {
+                                          // Deleted, or the single-entry refresh
+                                          // failed — fall back to a full reload.
+                                          _loadCollection();
+                                        }
+                                      },
+                                    );
+                                  }, childCount: visible.length),
+                                ),
+                              ),
+                              if (reachedEnd)
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24.0),
+                                    child: Center(
+                                      child: Text(
+                                        "You've reached the end of your collection.",
+                                        style: GoogleFonts.roboto(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              // Bottom clearance now that FABs are gone
+                              const SliverToBoxAdapter(
+                                child: SizedBox(height: 24),
+                              ),
+                            ],
                           ),
-                        // Clearance so the FABs don't sit on top of the last row
-                        const SliverToBoxAdapter(child: SizedBox(height: 72)),
-                      ],
-                    ),
-            ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

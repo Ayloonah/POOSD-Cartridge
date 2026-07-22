@@ -19,11 +19,22 @@ class MainNavScreen extends StatefulWidget {
 class _MainNavScreenState extends State<MainNavScreen> {
   int _selectedIndex = 0;
 
-  // Switch the visible tab
+  final _homeKey = GlobalKey<HomeScreenState>();
+  final _listsKey = GlobalKey<ListsScreenState>();
+
+  // Switch the visible tab. Since the IndexedStack below keeps every tab's
+  // screen alive rather than rebuilding it, changes made on one tab (e.g.
+  // adding a game while on Collection) wouldn't otherwise be reflected when
+  // switching to Home or Lists — so refresh them here on every reselect.
   void _goToTab(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0) {
+      _homeKey.currentState?.refresh();
+    } else if (index == 2) {
+      _listsKey.currentState?.refresh();
+    }
   }
 
   // Nav shell: bottom nav bar + the four tab screens, kept alive via IndexedStack
@@ -32,12 +43,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
   Widget build(BuildContext context) {
     final screens = [
       HomeScreen(
+        key: _homeKey,
         onSeeAllGames: () => _goToTab(1),
         onSeeAllLists: () => _goToTab(2),
       ),
       const CollectionScreen(),
-      const ListsScreen(),
-      const SettingsScreen(),
+      ListsScreen(key: _listsKey),
+      SettingsScreen(onGoBack: () => _goToTab(0)),
     ];
 
     return Scaffold(

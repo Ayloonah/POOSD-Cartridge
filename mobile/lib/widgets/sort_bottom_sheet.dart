@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/constants/app_colors.dart';
 
 // Bottom sheet for picking a sort option from a fixed list.
 // Pops with the chosen option, or null if dismissed without a choice.
@@ -20,18 +22,22 @@ class SortBottomSheet<T> extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Text(
               'Sort By',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.roboto(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           for (final option in options)
             RadioListTile<T>(
-              title: Text(labelBuilder(option)),
+              title: Text(labelBuilder(option), style: GoogleFonts.roboto()),
               value: option,
               groupValue: selected,
+              activeColor: AppColors.lightGreen,
               onChanged: (value) => Navigator.pop(context, value),
             ),
           const SizedBox(height: 8),
