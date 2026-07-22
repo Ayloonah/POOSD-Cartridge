@@ -8,6 +8,8 @@ import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
 import '../widgets/game_card.dart';
 import '../widgets/list_card.dart';
+import 'add_game_screen.dart';
+import 'create_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onSeeAllGames;
@@ -27,6 +29,7 @@ class HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   List<Map<String, dynamic>> _collectionEntries = [];
+  List<MapEntry<String, String>> _availableLists = [];
   List<dynamic> _recentGames = [];
   List<dynamic> _recentLists = [];
 
@@ -87,6 +90,12 @@ class HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _collectionEntries = gameEntries;
+        _availableLists = lists
+            .map(
+              (list) =>
+                  MapEntry(list['listId'].toString(), list['name'].toString()),
+            )
+            .toList();
         _recentGames = gameEntries.take(5).toList();
         _recentLists = lists.take(5).toList();
       });
@@ -103,6 +112,31 @@ class HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  // Opens the add-game flow directly, rather than just switching to the
+  // Collection tab and leaving the user to find the add button themselves
+  Future<void> _openAddGame() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddGameScreen(availableLists: _availableLists),
+      ),
+    );
+    if (added == true) _loadDashboardData();
+  }
+
+  // Opens the create-list flow directly, rather than just switching to the
+  // Lists tab and leaving the user to find the add button themselves
+  Future<void> _openCreateList() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            CreateListScreen(collectionEntries: _collectionEntries),
+      ),
+    );
+    if (created == true) _loadDashboardData();
   }
 
   // The 4 most recently added games in this list, for the card's cover grid
@@ -166,7 +200,7 @@ class HomeScreenState extends State<HomeScreen> {
                     items: _recentGames,
                     emptyMessage: 'No games yet.',
                     emptyButtonLabel: 'Add a Game',
-                    onEmptyButtonPressed: widget.onSeeAllGames,
+                    onEmptyButtonPressed: _openAddGame,
                     cardBuilder: (item) => GameCard(
                       title: item['name']?.toString() ?? '',
                       imageUrl: item['coverImage']?.toString(),
@@ -184,7 +218,7 @@ class HomeScreenState extends State<HomeScreen> {
                     items: _recentLists,
                     emptyMessage: 'No lists yet.',
                     emptyButtonLabel: 'Add a List',
-                    onEmptyButtonPressed: widget.onSeeAllLists,
+                    onEmptyButtonPressed: _openCreateList,
                     cardBuilder: (item) => SizedBox(
                       width: 138,
                       height: 212,

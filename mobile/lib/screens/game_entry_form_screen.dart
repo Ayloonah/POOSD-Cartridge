@@ -172,7 +172,10 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
           if (cacheResponse.statusCode != 200) {
             if (!mounted) return;
             setState(() {
-              _errorMessage = 'Could not save this game. Please try again.';
+              _errorMessage = _extractErrorMessage(
+                cacheResponse.body,
+                'Could not save this game. Please try again.',
+              );
             });
             return;
           }
@@ -187,7 +190,10 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
           if (manualResponse.statusCode != 201) {
             if (!mounted) return;
             setState(() {
-              _errorMessage = 'Could not save this game. Please try again.';
+              _errorMessage = _extractErrorMessage(
+                manualResponse.body,
+                'Could not save this game. Please try again.',
+              );
             });
             return;
           }
@@ -239,6 +245,17 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
           _isSaving = false;
         });
       }
+    }
+  }
+
+  // Surfaces the backend's own message/error (different routes use either
+  // key) instead of a generic one, falling back if the body isn't parseable
+  String _extractErrorMessage(String responseBody, String fallback) {
+    try {
+      final data = jsonDecode(responseBody);
+      return data['message'] ?? data['error'] ?? fallback;
+    } catch (_) {
+      return fallback;
     }
   }
 

@@ -1,8 +1,24 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../utils/constants.dart';
+import 'auth_state.dart';
 
 class ApiService {
+  // Set once at app startup (see main.dart). Lets every ApiService instance
+  // — constructed fresh at each call site throughout the app — silently
+  // apply a sliding-session refreshed token without every call site needing
+  // to wire that up individually.
+  static AuthState? authState;
+
+  // Checks for the sliding-session refreshed token on any response and
+  // applies it, so the caller never needs to think about this.
+  void _applyRefreshedToken(http.Response response) {
+    final refreshed = response.headers['x-refreshed-token'];
+    if (refreshed != null) {
+      authState?.updateToken(refreshed);
+    }
+  }
+
   // get()
   Future<http.Response> get(String endpoint, {String? token}) async {
     final url = Uri.parse('${ApiConstants.baseUrl}$endpoint');
@@ -11,6 +27,7 @@ class ApiService {
       headers['Authorization'] = 'Bearer $token';
     }
     final response = await http.get(url, headers: headers);
+    _applyRefreshedToken(response);
     return response;
   }
 
@@ -26,6 +43,7 @@ class ApiService {
       headers: headers,
       body: jsonEncode(body),
     );
+    _applyRefreshedToken(response);
     return response;
   }
 
@@ -41,6 +59,7 @@ class ApiService {
       headers: headers,
       body: jsonEncode(body)
     );
+    _applyRefreshedToken(response);
     return response;
   }
 
@@ -56,6 +75,7 @@ class ApiService {
       headers: headers,
       body: jsonEncode(body)
     );
+    _applyRefreshedToken(response);
     return response;
   }
 
@@ -74,6 +94,7 @@ class ApiService {
       headers: headers,
       body: body != null ? jsonEncode(body) : null,
     );
+    _applyRefreshedToken(response);
     return response;
   }
 }

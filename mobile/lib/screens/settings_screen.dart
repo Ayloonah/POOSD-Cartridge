@@ -233,6 +233,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!password.contains(RegExp(r'[A-Z]'))) {
       return 'Password must contain an uppercase letter';
     }
+    if (!password.contains(RegExp(r'[a-z]'))) {
+      return 'Password must contain a lowercase letter';
+    }
     if (!password.contains(RegExp(r'[0-9]'))) {
       return 'Password must contain a number';
     }
@@ -391,8 +394,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _goToSplash() {
-    Navigator.pushAndRemoveUntil(
-      context,
+    // rootNavigator: true — this screen now lives inside the Settings tab's
+    // own nested Navigator (so the bottom nav bar stays put while browsing),
+    // but logging out needs to replace the whole app shell, not just this
+    // tab's stack.
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const SplashScreen()),
       (route) => false,
     );
@@ -752,7 +758,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           decoration: _fieldDecoration(
                             'New Password',
                             helperText:
-                                '8-14 characters, 1 uppercase letter, 1 number, 1 special character',
+                                '8-14 characters, 1 uppercase letter, 1 lowercase letter, 1 number, 1 special character',
                             helperMaxLines: 2,
                             errorText: _newPasswordError,
                           ),
