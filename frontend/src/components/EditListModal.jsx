@@ -94,9 +94,11 @@ function getEntryCreatedTime(entry) {
 export default function EditListModal({
   isOpen,
   list,
+  draftSnapshot,
   onClose,
   onListUpdated,
-  onListDeleted
+  onListDeleted,
+  onOpenAddGameModal
 }) {
   const { token } = useContext(AuthContext);
 
@@ -104,44 +106,23 @@ export default function EditListModal({
     token || localStorage.getItem('token');
 
   const [name, setName] = useState('');
+  const [userEntries, setUserEntries] = useState([]);
 
-  const [userEntries, setUserEntries] =
-    useState([]);
+  const [originalSelectedEntryIds, setOriginalSelectedEntryIds] = useState([]);
+  const [selectedEntryIds, setSelectedEntryIds] = useState([]);
 
-  const [
-    originalSelectedGameIds,
-    setOriginalSelectedGameIds
-  ] = useState([]);
+  // 🟢 Local game search state
+  const [gameSearch, setGameSearch] = useState('');
 
-  const [
-    selectedGameIds,
-    setSelectedGameIds
-  ] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const [isLoading, setIsLoading] =
-    useState(false);
-
-  const [isSaving, setIsSaving] =
-    useState(false);
-
-  const [isDeleting, setIsDeleting] =
-    useState(false);
-
-  const [
-    showDeleteConfirmation,
-    setShowDeleteConfirmation
-  ] = useState(false);
-
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [error, setError] = useState('');
 
   const listId = list?._id?.toString() || '';
 
-  /*
-   * Load the collection every time the modal opens.
-   *
-   * Membership is determined by checking whether each
-   * collection entry contains this list ID in listIds.
-   */
   useEffect(() => {
     if (!isOpen || !list || !currentToken) {
       return;
@@ -153,61 +134,44 @@ export default function EditListModal({
       try {
         setIsLoading(true);
         setError('');
-        setName(list.name || '');
-        setShowDeleteConfirmation(false);
+        setGameSearch(''); // Reset search on open
 
-        const response = await api.get(
-          '/user-game-entries/collection',
-          currentToken
-        );
-
-        const responseData = await response
-          .json()
-          .catch(() => []);
+        const response = await api.get('/user-game-entries/collection', currentToken);
+        const responseData = await response.json().catch(() => []);
 
         if (!response.ok) {
-          throw new Error(
-            responseData.error ||
-              responseData.message ||
-              'Failed to load your collection.'
-          );
+          throw new Error(responseData.error || responseData.message || 'Failed to load your collection.');
         }
 
-        const entries = Array.isArray(responseData)
-          ? responseData
-          : [];
+        const entries = Array.isArray(responseData) ? responseData : [];
 
         const currentMembership = entries
-          .filter((entry) =>
-            getEntryListIds(entry).includes(listId)
-          )
-          .map(getGameId)
+          .filter((entry) => getEntryListIds(entry).includes(listId))
+          .map(getEntryId)
           .filter(Boolean);
 
         if (!isCancelled) {
           setUserEntries(entries);
-          setOriginalSelectedGameIds(
-            currentMembership
-          );
-          setSelectedGameIds(
-            currentMembership
-          );
+          setShowDeleteConfirmation(false);
+
+          if (draftSnapshot && draftSnapshot.list._id === listId) {
+            setName(draftSnapshot.name);
+            setOriginalSelectedEntryIds(draftSnapshot.originalSelectedEntryIds);
+            setSelectedEntryIds(draftSnapshot.selectedEntryIds);
+          } else {
+            setName(list.name || '');
+            setOriginalSelectedEntryIds(currentMembership);
+            setSelectedEntryIds(currentMembership);
+          }
         }
       } catch (loadError) {
-        console.error(
-          'Failed to load collection for list editing:',
-          loadError
-        );
+        console.error('Failed to load collection for list editing:', loadError);
 
         if (!isCancelled) {
-          setError(
-            loadError.message ||
-              'Failed to load your collection.'
-          );
-
+          setError(loadError.message || 'Failed to load your collection.');
           setUserEntries([]);
-          setOriginalSelectedGameIds([]);
-          setSelectedGameIds([]);
+          setOriginalSelectedEntryIds([]);
+          setSelectedEntryIds([]);
         }
       } finally {
         if (!isCancelled) {
@@ -221,43 +185,33 @@ export default function EditListModal({
     return () => {
       isCancelled = true;
     };
-  }, [
-    isOpen,
-    list,
-    listId,
-    currentToken
-  ]);
+  }, [isOpen, list, listId, currentToken, draftSnapshot]);
 
-  /*
-   * Sort the collection newest first.
-   */
   const sortedEntries = useMemo(() => {
     return [...userEntries].sort(
       (entryA, entryB) =>
-        getEntryCreatedTime(entryB) -
-        getEntryCreatedTime(entryA)
+        getEntryCreatedTime(entryB) - getEntryCreatedTime(entryA)
     );
   }, [userEntries]);
 
-  /*
-   * Collection entries currently selected for this list.
-   */
+  // 🟢 Filter collection entries based on the search query input
+  const filteredEntries = useMemo(() => {
+    const query = gameSearch.trim().toLowerCase();
+    if (!query) {
+      return sortedEntries;
+    }
+
+    return sortedEntries.filter((entry) => {
+      const title = getGameTitle(entry).toLowerCase();
+      return title.includes(query);
+    });
+  }, [sortedEntries, gameSearch]);
+
   const selectedEntries = useMemo(() => {
-    const selectedIds = new Set(
-      selectedGameIds
-    );
+    const selectedIds = new Set(selectedEntryIds);
+    return sortedEntries.filter((entry) => selectedIds.has(getEntryId(entry)));
+  }, [sortedEntries, selectedEntryIds]);
 
-    return sortedEntries.filter((entry) =>
-      selectedIds.has(getGameId(entry))
-    );
-  }, [
-    sortedEntries,
-    selectedGameIds
-  ]);
-
-  /*
-   * Up to four images for the visual preview.
-   */
   const selectedCoverImages = useMemo(() => {
     return selectedEntries
       .map(getCoverImage)
@@ -265,103 +219,73 @@ export default function EditListModal({
       .slice(0, 4);
   }, [selectedEntries]);
 
-  /*
-   * The API stores one coverImage string.
-   *
-   * Save the newest selected game's cover as the
-   * representative list cover.
-   */
-  const generatedCoverImage =
-    selectedCoverImages[0] || null;
+  const previewTiles = useMemo(() => {
+    return Array.from({ length: 4 }, (_, index) => selectedCoverImages[index] || null);
+  }, [selectedCoverImages]);
 
+  const generatedCoverImage = selectedCoverImages[0] || null;
   const trimmedName = name.trim();
 
   const membershipChanged = useMemo(() => {
-    if (
-      selectedGameIds.length !==
-      originalSelectedGameIds.length
-    ) {
+    if (selectedEntryIds.length !== originalSelectedEntryIds.length) {
       return true;
     }
 
-    const originalSet = new Set(
-      originalSelectedGameIds
-    );
+    const originalSet = new Set(originalSelectedEntryIds);
+    return selectedEntryIds.some((entryId) => !originalSet.has(entryId));
+  }, [selectedEntryIds, originalSelectedEntryIds]);
 
-    return selectedGameIds.some(
-      (gameId) => !originalSet.has(gameId)
-    );
-  }, [
-    selectedGameIds,
-    originalSelectedGameIds
-  ]);
+  const nameChanged = trimmedName !== (list?.name?.trim() || '');
+  const coverChanged = generatedCoverImage !== (list?.coverImage || null);
+  const hasChanges = nameChanged || membershipChanged || coverChanged;
 
-  const nameChanged =
-    trimmedName !==
-    (list?.name?.trim() || '');
+  const isBusy = isSaving || isDeleting || isLoading;
 
-  const coverChanged =
-    generatedCoverImage !==
-    (list?.coverImage || null);
+  const handleToggleEntry = (entryId, checked) => {
+    if (!entryId) return;
 
-  const hasChanges =
-    nameChanged ||
-    membershipChanged ||
-    coverChanged;
-
-  const isBusy =
-    isSaving ||
-    isDeleting ||
-    isLoading;
-
-  const handleToggleGame = (
-    gameId,
-    checked
-  ) => {
-    if (!gameId) {
-      return;
-    }
-
-    setSelectedGameIds((currentIds) => {
+    setSelectedEntryIds((currentIds) => {
       if (checked) {
-        if (currentIds.includes(gameId)) {
-          return currentIds;
-        }
-
-        return [...currentIds, gameId];
+        return currentIds.includes(entryId) ? currentIds : [...currentIds, entryId];
       }
-
-      return currentIds.filter(
-        (currentId) =>
-          currentId !== gameId
-      );
+      return currentIds.filter((currentId) => currentId !== entryId);
     });
 
     setError('');
   };
 
+  const handleOpenAddGame = () => {
+    if (!onOpenAddGameModal) return;
+
+    onOpenAddGameModal({
+      list,
+      name,
+      selectedEntryIds: [...selectedEntryIds],
+      originalSelectedEntryIds: [...originalSelectedEntryIds]
+    });
+  };
+
   const handleClose = () => {
-    if (isSaving || isDeleting) {
-      return;
-    }
+    if (isSaving || isDeleting) return;
 
     setError('');
     setShowDeleteConfirmation(false);
     onClose();
   };
 
+  const getTitleByEntryId = (entryId) => {
+    const matchingEntry = userEntries.find((entry) => getEntryId(entry) === entryId);
+    return matchingEntry ? getGameTitle(matchingEntry) : 'game';
+  };
+
   const handleSave = async () => {
     if (!listId) {
-      setError(
-        'This list does not have a valid ID.'
-      );
+      setError('This list does not have a valid ID.');
       return;
     }
 
     if (!trimmedName) {
-      setError(
-        'A list name is required.'
-      );
+      setError('A list name is required.');
       return;
     }
 
@@ -374,147 +298,63 @@ export default function EditListModal({
       setIsSaving(true);
       setError('');
 
-      const originalSet = new Set(
-        originalSelectedGameIds
-      );
+      const originalSet = new Set(originalSelectedEntryIds);
+      const selectedSet = new Set(selectedEntryIds);
 
-      const selectedSet = new Set(
-        selectedGameIds
-      );
+      const entryIdsToAdd = selectedEntryIds.filter((id) => !originalSet.has(id));
+      const entryIdsToRemove = originalSelectedEntryIds.filter((id) => !selectedSet.has(id));
 
-      const gameIdsToAdd =
-        selectedGameIds.filter(
-          (gameId) =>
-            !originalSet.has(gameId)
-        );
-
-      const gameIdsToRemove =
-        originalSelectedGameIds.filter(
-          (gameId) =>
-            !selectedSet.has(gameId)
-        );
-
-      /*
-       * First update game membership.
-       *
-       * Each membership endpoint expects the actual
-       * Game document ID, not the UserGameEntry ID.
-       */
-      const addRequests = gameIdsToAdd.map(
-        async (gameId) => {
-          const response = await api.post(
-            `/user-game-entries/lists/${listId}/games/${gameId}`,
-            {},
-            currentToken
-          );
-
-          const responseData = await response
-            .json()
-            .catch(() => ({}));
-
-          if (!response.ok) {
-            throw new Error(
-              responseData.error ||
-                responseData.message ||
-                `Failed to add ${getTitleByGameId(
-                  gameId
-                )} to the list.`
-            );
-          }
-
-          return responseData;
-        }
-      );
-
-      const removeRequests =
-        gameIdsToRemove.map(
-          async (gameId) => {
-            const response = await api.delete(
-              `/user-game-entries/lists/${listId}/games/${gameId}`,
-              currentToken
-            );
-
-            const responseData =
-              await response
-                .json()
-                .catch(() => ({}));
-
-            if (!response.ok) {
-              throw new Error(
-                responseData.error ||
-                  responseData.message ||
-                  `Failed to remove ${getTitleByGameId(
-                    gameId
-                  )} from the list.`
-              );
-            }
-
-            return responseData;
-          }
-        );
-
-      /*
-       * Run membership requests in parallel.
-       */
-      await Promise.all([
-        ...addRequests,
-        ...removeRequests
-      ]);
-
-      /*
-       * Then save the name and generated cover.
-       *
-       * At least one of these fields must be included
-       * because the list update endpoint rejects an
-       * empty update object.
-       */
-      const updatePayload = {};
-
-      if (nameChanged) {
-        updatePayload.name = trimmedName;
-      }
-
-      if (coverChanged || membershipChanged) {
-        updatePayload.coverImage =
-            generatedCoverImage;
-        }
-
-      let updatedList = {
-        ...list,
-        name: trimmedName,
-        coverImage: generatedCoverImage
+      const getGameIdByEntryId = (eId) => {
+        const matchingEntry = userEntries.find((entry) => getEntryId(entry) === eId);
+        return matchingEntry ? getGameId(matchingEntry) : null;
       };
 
-      if (
-        Object.keys(updatePayload).length > 0
-      ) {
-        const listResponse = await api.patch(
-          `/lists/${listId}`,
-          updatePayload,
-          currentToken
-        );
+      const addRequests = entryIdsToAdd.map(async (eId) => {
+        const gameId = getGameIdByEntryId(eId);
+        if (!gameId) return;
 
-        const listResponseData =
-          await listResponse
-            .json()
-            .catch(() => ({}));
+        const response = await api.post(`/user-game-entries/lists/${listId}/games/${gameId}`, {}, currentToken);
+        const responseData = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(responseData.error || responseData.message || `Failed to add ${getTitleByEntryId(eId)} to the list.`);
+        }
+        return responseData;
+      });
+
+      const removeRequests = entryIdsToRemove.map(async (eId) => {
+        const gameId = getGameIdByEntryId(eId);
+        if (!gameId) return;
+
+        const response = await api.delete(`/user-game-entries/lists/${listId}/games/${gameId}`, currentToken);
+        const responseData = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(responseData.error || responseData.message || `Failed to remove ${getTitleByEntryId(eId)} from the list.`);
+        }
+        return responseData;
+      });
+
+      await Promise.all([...addRequests, ...removeRequests]);
+
+      const updatePayload = {};
+      if (nameChanged) updatePayload.name = trimmedName;
+      if (coverChanged || membershipChanged) updatePayload.coverImage = generatedCoverImage;
+
+      let updatedList = { ...list, name: trimmedName, coverImage: generatedCoverImage };
+
+      if (Object.keys(updatePayload).length > 0) {
+        const listResponse = await api.patch(`/lists/${listId}`, updatePayload, currentToken);
+        const listResponseData = await listResponse.json().catch(() => ({}));
 
         if (!listResponse.ok) {
-          throw new Error(
-            listResponseData.error ||
-              listResponseData.message ||
-              'Game membership changed, but the list details could not be updated.'
-          );
+          throw new Error(listResponseData.error || listResponseData.message || 'Game membership changed, but list details could not be updated.');
         }
 
-        updatedList =
-          listResponseData.list ||
-          updatedList;
+        updatedList = listResponseData.list || updatedList;
       }
 
-      setOriginalSelectedGameIds(
-        selectedGameIds
-      );
+      setOriginalSelectedEntryIds([...selectedEntryIds]);
 
       if (onListUpdated) {
         onListUpdated(updatedList);
@@ -522,15 +362,8 @@ export default function EditListModal({
 
       onClose();
     } catch (saveError) {
-      console.error(
-        'Failed to save list changes:',
-        saveError
-      );
-
-      setError(
-        saveError.message ||
-          'Failed to save list changes.'
-      );
+      console.error('Failed to save list changes:', saveError);
+      setError(saveError.message || 'Failed to save list changes.');
     } finally {
       setIsSaving(false);
     }
@@ -538,9 +371,7 @@ export default function EditListModal({
 
   const handleDelete = async () => {
     if (!listId) {
-      setError(
-        'This list does not have a valid ID.'
-      );
+      setError('This list does not have a valid ID.');
       return;
     }
 
@@ -548,21 +379,11 @@ export default function EditListModal({
       setIsDeleting(true);
       setError('');
 
-      const response = await api.delete(
-        `/lists/${listId}`,
-        currentToken
-      );
-
-      const responseData = await response
-        .json()
-        .catch(() => ({}));
+      const response = await api.delete(`/lists/${listId}`, currentToken);
+      const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(
-          responseData.error ||
-            responseData.message ||
-            'Failed to delete list.'
-        );
+        throw new Error(responseData.error || responseData.message || 'Failed to delete list.');
       }
 
       if (onListDeleted) {
@@ -571,30 +392,11 @@ export default function EditListModal({
 
       onClose();
     } catch (deleteError) {
-      console.error(
-        'Failed to delete list:',
-        deleteError
-      );
-
-      setError(
-        deleteError.message ||
-          'Failed to delete list.'
-      );
+      console.error('Failed to delete list:', deleteError);
+      setError(deleteError.message || 'Failed to delete list.');
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const getTitleByGameId = (gameId) => {
-    const matchingEntry =
-      userEntries.find(
-        (entry) =>
-          getGameId(entry) === gameId
-      );
-
-    return matchingEntry
-      ? getGameTitle(matchingEntry)
-      : 'game';
   };
 
   if (!isOpen || !list) {
@@ -608,43 +410,37 @@ export default function EditListModal({
       aria-labelledby="edit-list-title"
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
+        inset: 0,
         padding: '20px',
-        backgroundColor:
-          'rgba(0, 0, 0, 0.7)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 130
+        zIndex: 130,
+        boxSizing: 'border-box'
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '520px',
+          maxWidth: '860px',
           maxHeight: '90vh',
           backgroundColor: '#FFFFFF',
           border: '4px solid #143910',
           borderRadius: '16px',
-          boxShadow:
-            '0 12px 32px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.3)',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxSizing: 'border-box'
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: '16px 24px',
-            borderBottom:
-              '2px solid #E5E7EB',
+            borderBottom: '2px solid #E5E7EB',
             display: 'flex',
-            justifyContent:
-              'space-between',
+            justifyContent: 'space-between',
             alignItems: 'center',
             gap: '16px'
           }}
@@ -652,12 +448,7 @@ export default function EditListModal({
           <h2
             id="edit-list-title"
             className="font-vt323"
-            style={{
-              margin: 0,
-              color: '#143910',
-              fontSize: '30px',
-              letterSpacing: '1px'
-            }}
+            style={{ margin: 0, color: '#143910', fontSize: '30px', letterSpacing: '1px' }}
           >
             Edit List
           </h2>
@@ -665,72 +456,28 @@ export default function EditListModal({
           <button
             type="button"
             onClick={handleClose}
-            disabled={
-              isSaving ||
-              isDeleting
-            }
-            aria-label="Close edit list modal"
+            disabled={isSaving || isDeleting}
             style={{
-              padding: '4px 8px',
-              background: 'none',
-              color: '#143910',
-              fontSize: '20px',
-              fontWeight: '700',
-              opacity:
-                isSaving || isDeleting
-                  ? 0.5
-                  : 1
+              padding: '4px 8px', border: 'none', background: 'none', color: '#143910',
+              fontSize: '20px', fontWeight: '700', cursor: isSaving || isDeleting ? 'not-allowed' : 'pointer',
+              opacity: isSaving || isDeleting ? 0.5 : 1
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Body */}
-        <div
-          style={{
-            flex: 1,
-            padding: '24px 32px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
-          }}
-        >
+        <div style={{ flex: 1, padding: '24px 32px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {error && (
-            <div
-              role="alert"
-              style={{
-                padding: '12px 14px',
-                border:
-                  '1px solid #FCA5A5',
-                borderRadius: '6px',
-                backgroundColor:
-                  '#FEF2F2',
-                color: '#B91C1C',
-                fontSize: '13px',
-                fontWeight: '600'
-              }}
-            >
+            <div role="alert" style={{ padding: '12px 14px', border: '1px solid #FCA5A5', borderRadius: '6px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '13px', fontWeight: '600' }}>
               {error}
             </div>
           )}
 
-          {/* List name */}
           <div>
-            <label
-              htmlFor="edit-list-name"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                color: '#143910',
-                fontSize: '13px',
-                fontWeight: '700'
-              }}
-            >
+            <label htmlFor="edit-list-name" style={{ display: 'block', marginBottom: '5px', color: '#143910', fontSize: '13px', fontWeight: '700' }}>
               List Name *
             </label>
-
             <input
               id="edit-list-name"
               type="text"
@@ -743,438 +490,149 @@ export default function EditListModal({
               maxLength={100}
               autoFocus
               style={{
-                width: '100%',
-                padding: '10px 12px',
-                border:
-                  '2px solid #143910',
-                borderRadius: '5px',
-                backgroundColor: isBusy
-                  ? '#F3F4F6'
-                  : '#FFFFFF',
-                color: '#111827',
-                fontFamily: 'Inter',
-                fontSize: '14px',
-                outline: 'none'
+                width: '100%', padding: '10px 12px', border: '2px solid #143910', borderRadius: '5px',
+                backgroundColor: isBusy ? '#F3F4F6' : '#FFFFFF', color: '#111827', fontFamily: 'Inter',
+                fontSize: '14px', outline: 'none', boxSizing: 'border-box'
               }}
             />
           </div>
 
-          {/* Generated cover preview */}
-          <div>
-            <span
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                color: '#143910',
-                fontSize: '13px',
-                fontWeight: '700'
-              }}
-            >
-              Cover Preview
-            </span>
-
-            <div
-              style={{
-                width: '100%',
-                height: '150px',
-                padding: '2px',
-                border:
-                  '2px solid #143910',
-                borderRadius: '8px',
-                backgroundColor:
-                  '#EBE5F0',
-                overflow: 'hidden',
-                display: 'grid',
-                gridTemplateColumns:
-                  selectedCoverImages.length >
-                  1
-                    ? 'repeat(2, 1fr)'
-                    : '1fr',
-                gridTemplateRows:
-                  selectedCoverImages.length >
-                  2
-                    ? 'repeat(2, 1fr)'
-                    : '1fr',
-                gap: '2px'
-              }}
-            >
-              {selectedCoverImages.length >
-              0 ? (
-                selectedCoverImages.map(
-                  (imageUrl, index) => (
-                    <img
-                      key={`${imageUrl}-${index}`}
-                      src={imageUrl}
-                      alt="List cover preview"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        minHeight: 0,
-                        objectFit: 'cover'
-                      }}
-                    />
-                  )
-                )
-              ) : (
-                <div
-                  style={{
-                    gridColumn: '1 / -1',
-                    gridRow: '1 / -1',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent:
-                      'center',
-                    alignItems: 'center',
-                    gap: '6px',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    fontStyle: 'italic',
-                    textAlign: 'center'
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '30px'
-                    }}
-                  >
-                    🎮
-                  </span>
-
-                  Select games to generate a cover
-                </div>
-              )}
-            </div>
-
-            <p
-              style={{
-                margin: '7px 0 0 0',
-                color: '#6B7280',
-                fontSize: '11px',
-                lineHeight: 1.4
-              }}
-            >
-              The collage is shown as a preview. The
-              newest selected game cover is saved as the
-              list cover.
-            </p>
-          </div>
-
-          {/* Membership selector */}
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent:
-                  'space-between',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '7px'
-              }}
-            >
-              <label
-                style={{
-                  color: '#143910',
-                  fontSize: '13px',
-                  fontWeight: '700'
-                }}
-              >
-                Games in This List
-              </label>
-
-              <span
-                style={{
-                  color: '#6B7280',
-                  fontSize: '11px'
-                }}
-              >
-                {selectedGameIds.length}{' '}
-                selected
-              </span>
-            </div>
-
-            <div
-              style={{
-                maxHeight: '220px',
-                padding: '10px',
-                border:
-                  '2px solid #143910',
-                borderRadius: '6px',
-                backgroundColor:
-                  '#F9FAFB',
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '7px'
-              }}
-            >
-              {isLoading ? (
-                <span
-                  style={{
-                    padding: '16px',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    textAlign: 'center'
-                  }}
-                >
-                  Loading collection...
-                </span>
-              ) : sortedEntries.length ===
-                0 ? (
-                <span
-                  style={{
-                    padding: '16px',
-                    color: '#6B7280',
-                    fontSize: '13px',
-                    textAlign: 'center'
-                  }}
-                >
-                  No games in your collection yet.
-                </span>
-              ) : (
-                sortedEntries.map((entry) => {
-                  const gameId =
-                    getGameId(entry);
-
-                  const title =
-                    getGameTitle(entry);
-
-                  const cover =
-                    getCoverImage(entry);
-
-                  const isChecked =
-                    selectedGameIds.includes(
-                      gameId
-                    );
-
-                  return (
-                    <label
-                      key={
-                        getEntryId(entry) ||
-                        gameId
-                      }
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '7px',
-                        borderRadius: '5px',
-                        backgroundColor:
-                          isChecked
-                            ? '#F0F7D6'
-                            : '#FFFFFF',
-                        color: '#111827',
-                        fontSize: '13px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        disabled={
-                          isSaving ||
-                          isDeleting
-                        }
-                        onChange={(event) =>
-                          handleToggleGame(
-                            gameId,
-                            event.target
-                              .checked
-                          )
-                        }
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          flexShrink: 0
-                        }}
-                      />
-
-                      <div
-                        style={{
-                          width: '34px',
-                          height: '46px',
-                          borderRadius: '4px',
-                          backgroundColor:
-                            '#E5E7EB',
-                          overflow: 'hidden',
-                          flexShrink: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent:
-                            'center'
-                        }}
-                      >
-                        {cover ? (
-                          <img
-                            src={cover}
-                            alt=""
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit:
-                                'cover'
-                            }}
-                          />
-                        ) : (
-                          <span
-                            style={{
-                              fontSize: '16px'
-                            }}
-                          >
-                            🎮
-                          </span>
-                        )}
-                      </div>
-
-                      <span
-                        style={{
-                          minWidth: 0,
-                          fontWeight: '600',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow:
-                            'ellipsis'
-                        }}
-                        title={title}
-                      >
-                        {title}
-                      </span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Delete area */}
-          <div
-            style={{
-              marginTop: '4px',
-              paddingTop: '20px',
-              borderTop:
-                '2px solid #E5E7EB'
-            }}
-          >
-            {!showDeleteConfirmation ? (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '28px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '0 1 250px', minWidth: '220px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                <span style={{ color: '#143910', fontSize: '13px', fontWeight: '700' }}>Cover Preview</span>
+                <span style={{ color: '#6B7280', fontSize: '11px' }}>Auto-generated</span>
+              </div>
               <div
                 style={{
-                  display: 'flex',
-                  justifyContent:
-                    'space-between',
-                  alignItems: 'center',
-                  gap: '16px'
+                  width: '100%', aspectRatio: '2 / 3', padding: '3px', border: '2px solid #143910', borderRadius: '8px',
+                  backgroundColor: '#EBE5F0', overflow: 'hidden', display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
+                  gap: '3px', boxSizing: 'border-box'
                 }}
               >
-                <div>
-                  <h3
-                    style={{
-                      margin:
-                        '0 0 4px 0',
-                      color: '#991B1B',
-                      fontSize: '14px'
-                    }}
-                  >
-                    Delete List
-                  </h3>
+                {previewTiles.map((imageUrl, index) => (
+                  <div key={index} style={{ minWidth: 0, minHeight: 0, borderRadius: '4px', backgroundColor: '#c3d1e4', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={`Cover ${index + 1}`} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ color: '#D1D5DB', fontSize: '22px', opacity: 0.6 }}>🎮</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                  <p
-                    style={{
-                      margin: 0,
-                      color: '#6B7280',
-                      fontSize: '12px',
-                      lineHeight: 1.4
-                    }}
-                  >
-                    Games will remain in your
-                    collection.
-                  </p>
-                </div>
-
-                <Button
-                  variant="danger"
-                  onClick={() =>
-                    setShowDeleteConfirmation(
-                      true
-                    )
-                  }
-                  disabled={isBusy}
+            <div style={{ flex: '1 1 400px', minWidth: '290px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <label style={{ color: '#143910', fontSize: '13px', fontWeight: '700' }}>Games in This List</label>
+                <button
+                  type="button"
+                  onClick={handleOpenAddGame}
+                  disabled={isSaving || isDeleting || !onOpenAddGameModal}
                   style={{
-                    flexShrink: 0,
-                    padding: '8px 12px'
+                    padding: 0, border: 'none', background: 'none', color: '#2E7D32', fontSize: '12px', fontWeight: '700', textDecoration: 'underline',
+                    cursor: isSaving || isDeleting || !onOpenAddGameModal ? 'not-allowed' : 'pointer',
+                    opacity: isSaving || isDeleting || !onOpenAddGameModal ? 0.5 : 1
                   }}
                 >
+                  + Add new game
+                </button>
+              </div>
+
+              {/* 🟢 Search input to quickly filter games in edit mode */}
+              <input
+                type="text"
+                placeholder="Search games to add..."
+                value={gameSearch}
+                onChange={(e) => setGameSearch(e.target.value)}
+                disabled={isLoading || userEntries.length === 0}
+                style={{
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '4px',
+                  border: '1px solid #143910',
+                  fontFamily: 'Inter',
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+
+              <div style={{ height: '320px', padding: '10px', border: '2px solid #143910', borderRadius: '6px', backgroundColor: '#F9FAFB', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '7px', boxSizing: 'border-box' }}>
+                {isLoading ? (
+                  <span style={{ padding: '14px', color: '#6B7280', fontSize: '13px', textAlign: 'center' }}>Loading collection...</span>
+                ) : sortedEntries.length === 0 ? (
+                  <span style={{ padding: '14px', color: '#6B7280', fontSize: '13px', textAlign: 'center' }}>No games in your collection yet.</span>
+                ) : filteredEntries.length === 0 ? (
+                  <span style={{ padding: '14px', color: '#6B7280', fontSize: '13px', textAlign: 'center' }}>No games match your search.</span>
+                ) : (
+                  filteredEntries.map((entry) => {
+                    const entryId = getEntryId(entry);
+                    const gameTitle = getGameTitle(entry);
+                    const cover = getCoverImage(entry);
+
+                    const isChecked = selectedEntryIds.includes(entryId);
+
+                    return (
+                      <label
+                        key={entryId}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px', padding: '7px', borderRadius: '5px',
+                          backgroundColor: isChecked ? '#F0F7D6' : '#FFFFFF', color: '#111827', fontSize: '13px',
+                          cursor: isSaving || isDeleting ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={isSaving || isDeleting}
+                          onChange={(event) => handleToggleEntry(entryId, event.target.checked)}
+                          style={{ width: '16px', height: '16px', flexShrink: 0 }}
+                        />
+                        <div style={{ width: '42px', height: '62px', borderRadius: '4px', backgroundColor: '#b0c3dd', overflow: 'hidden', flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                          {cover ? (
+                            <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span>🎮</span>
+                          )}
+                        </div>
+                        <span title={gameTitle} style={{ minWidth: 0, fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {gameTitle}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+
+              <span style={{ color: '#6B7280', fontSize: '11px' }}>
+                {selectedEntryIds.length} {selectedEntryIds.length === 1 ? 'game selected' : 'games selected'}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '4px', paddingTop: '20px', borderTop: '2px solid #E5E7EB' }}>
+            {!showDeleteConfirmation ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 4px 0', color: '#991B1B', fontSize: '14px' }}>Delete List</h3>
+                  <p style={{ margin: 0, color: '#6B7280', fontSize: '12px', lineHeight: 1.4 }}>Games will remain in your collection.</p>
+                </div>
+                <Button variant="danger" onClick={() => setShowDeleteConfirmation(true)} disabled={isBusy} style={{ flexShrink: 0, padding: '8px 12px' }}>
                   Delete
                 </Button>
               </div>
             ) : (
-              <div
-                style={{
-                  padding: '14px',
-                  border:
-                    '1px solid #FCA5A5',
-                  borderRadius: '8px',
-                  backgroundColor:
-                    '#FEF2F2'
-                }}
-              >
-                <p
-                  style={{
-                    margin:
-                      '0 0 8px 0',
-                    color: '#991B1B',
-                    fontSize: '13px',
-                    fontWeight: '700'
-                  }}
-                >
-                  Delete “{list.name}”?
-                </p>
-
-                <p
-                  style={{
-                    margin:
-                      '0 0 14px 0',
-                    color: '#7F1D1D',
-                    fontSize: '12px',
-                    lineHeight: 1.4
-                  }}
-                >
-                  This cannot be undone. The games
-                  will remain in your collection.
-                </p>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent:
-                      'flex-end',
-                    gap: '8px'
-                  }}
-                >
-                  <Button
-                    variant="tertiary"
-                    onClick={() =>
-                      setShowDeleteConfirmation(
-                        false
-                      )
-                    }
-                    disabled={isBusy}
-                    style={{
-                      padding: '8px 12px'
-                    }}
-                  >
+              <div style={{ padding: '14px', border: '1px solid #FCA5A5', borderRadius: '8px', backgroundColor: '#FEF2F2' }}>
+                <p style={{ margin: '0 0 8px 0', color: '#991B1B', fontSize: '13px', fontWeight: '700' }}>Delete “{list.name}”?</p>
+                <p style={{ margin: '0 0 14px 0', color: '#7F1D1D', fontSize: '12px', lineHeight: 1.4 }}>This cannot be undone. The games will remain in your collection.</p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <Button variant="tertiary" onClick={() => setShowDeleteConfirmation(false)} disabled={isBusy} style={{ padding: '8px 12px' }}>
                     Keep List
                   </Button>
-
-                  <Button
-                    variant="danger"
-                    onClick={handleDelete}
-                    disabled={isBusy}
-                    style={{
-                      padding: '8px 12px'
-                    }}
-                  >
-                    {isDeleting
-                      ? 'Deleting...'
-                      : 'Yes, Delete'}
+                  <Button variant="danger" onClick={handleDelete} disabled={isBusy} style={{ padding: '8px 12px' }}>
+                    {isDeleting ? 'Deleting...' : 'Yes, Delete'}
                   </Button>
                 </div>
               </div>
@@ -1182,41 +640,10 @@ export default function EditListModal({
           </div>
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: '16px 32px',
-            borderTop:
-              '2px solid #E5E7EB',
-            backgroundColor: '#F9FAFB',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '12px'
-          }}
-        >
-          <Button
-            variant="tertiary"
-            onClick={handleClose}
-            disabled={
-              isSaving ||
-              isDeleting
-            }
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={
-              isBusy ||
-              !trimmedName ||
-              !hasChanges
-            }
-          >
-            {isSaving
-              ? 'Saving...'
-              : 'Save Changes'}
+        <div style={{ padding: '16px 32px', borderTop: '2px solid #E5E7EB', backgroundColor: '#F9FAFB', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <Button variant="tertiary" onClick={handleClose} disabled={isSaving || isDeleting}>Cancel</Button>
+          <Button variant="primary" onClick={handleSave} disabled={isBusy || !trimmedName || !hasChanges}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>

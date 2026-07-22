@@ -4,7 +4,6 @@ import searchIcon from '../assets/Search.svg';
 import { api } from '../api';
 import { AuthContext } from '../context/AuthContext';
 
-// 🟢 Added onSaveSuccess to the props destructuring
 export default function AddGameModal({ isOpen, onClose, onOpenEditModal, onSaveSuccess }) {
   const { token } = useContext(AuthContext); 
   const currentToken = token || localStorage.getItem('token'); 
@@ -195,9 +194,28 @@ export default function AddGameModal({ isOpen, onClose, onOpenEditModal, onSaveS
       const resData = await res.json();
       
       if (res.ok) {
+        const newEntryId =
+          resData.entry?._id ||
+          resData.entryId ||
+          resData._id ||
+          null;
+
+        /*
+        * Update the parent before closing. This allows the
+        * parent to remember the new entry before reopening
+        * Create List or Edit List.
+        */
+        if (onSaveSuccess) {
+          onSaveSuccess(
+            newEntryId
+              ? newEntryId.toString()
+              : null
+          );
+        }
+
         onClose();
-        if (onSaveSuccess) onSaveSuccess(); // 🟢 Now properly references the prop
-      } else if (res.status === 409) {
+      }
+      else if (res.status === 409) {
         const existingEntryId = resData.entryId || resData.entry?._id || resData.existingEntry?._id;
         setDuplicateEntry(existingEntryId);
       } else {

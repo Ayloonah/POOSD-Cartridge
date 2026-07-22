@@ -1,199 +1,351 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useContext,
+  useCallback
+} from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import DashboardLayout from '../components/DashboardLayout';
+import ListCard from '../components/ListCard';
 import Button from '../components/Button';
+import CreateListModal from '../components/CreateListModal';
+import EditListModal from '../components/EditListModal';
+import AddGameModal from '../components/AddGameModal';
+
 import { api } from '../api';
 import { AuthContext } from '../context/AuthContext';
+
+// Helpers to normalize and extract IDs for the ListCard collage
+function normalizeEntry(raw) {
+  const rawGame = raw.gameId;
+  const game = rawGame && typeof rawGame === 'object' ? rawGame : null;
+
+  return {
+    ...raw,
+    entryId: raw._id?.toString(),
+    gameId: game ? game._id?.toString() : raw.gameId?.toString(),
+    name: game?.name || raw.name || 'Unknown Game',
+    coverImage: game?.coverImage || raw.coverImage || null,
+  };
+}
+
+function getEntryListIds(entry) {
+  if (!Array.isArray(entry?.listIds)) return [];
+  return entry.listIds
+    .map((listId) => (listId && typeof listId === 'object' ? listId._id?.toString() : listId?.toString()))
+    .filter(Boolean);
+}
 
 export default function ListViewPage() {
   const { token } = useContext(AuthContext);
   const currentToken = token || localStorage.getItem('token');
   const navigate = useNavigate();
 
-  const [name, setName] = useState('');
-  const [userEntries, setUserEntries] = useState([]);
-  const [selectedEntryIds, setSelectedEntryIds] = useState([]);
+  // Data states
+  const [userLists, setUserLists] = useState([]);
+  const [userCollection, setUserCollection] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (currentToken) {
-      api.get('/user-game-entries/collection', currentToken)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            // Sort collection entries from newest to oldest by creation date
-            const sortedEntries = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            setUserEntries(sortedEntries);
-          } else {
-            setUserEntries([]);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to load collection games", err);
-          setError("Failed to load games from your collection.");
-        })
-        .finally(() => setIsLoading(false));
+  // Search & Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortRule, setSortRule] = useState('date_desc');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const savedValue = localStorage.getItem('cartridge_lists_per_page');
+    if (savedValue === 'All') return 'All';
+    const parsedValue = Number(savedValue);
+    return parsedValue > 0 ? parsedValue : 10;
+  });
+
+  // Modal visibility and bridge states
+  const [isAddGameModalOpen, setIsAddGameModalOpen] = useState(false);
+  const [isCreateListOpen, setIsCreateListOpen] = useState(false);
+  const [listToEdit, setListToEdit] = useState(null);
+
+  const [tempListName, setTempListName] = useState('');
+  const [tempSelectedEntryIds, setTempSelectedEntryIds] = useState([]);
+  const [returnToListModal, setReturnToListModal] = useState(false);
+  const [editListDraft, setEditListDraft] = useState(null);
+
+  const fetchPageData = useCallback(async () => {
+    if (!currentToken) {
+      setError('You must be logged in to view your lists.');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const [listsRes, collectionRes] = await Promise.all([
+        api.get('/lists', currentToken),
+        api.get('/user-game-entries/collection', currentToken)
+      ]);
+
+      if (!listsRes.ok) throw new Error('Failed to load lists.');
+      if (!collectionRes.ok) throw new Error('Failed to load collection for covers.');
+
+      const listsData = await listsRes.json();
+      const collectionData = await collectionRes.json();
+
+      setUserLists(Array.isArray(listsData) ? listsData : []);
+      setUserCollection((Array.isArray(collectionData) ? collectionData : []).map(normalizeEntry));
+    } catch (err) {
+      console.error('List page fetch error:', err);
+      setError(err.message || 'Failed to load data.');
+    } finally {
+      setIsLoading(false);
     }
   }, [currentToken]);
 
-  // Use the 4 latest games added out of the selected ones for the cover collage
-  const getLatestCoverImages = () => {
-    const selectedEntries = userEntries.filter(entry => selectedEntryIds.includes(entry._id));
-    
-    // Sort selected entries by newest createdAt date to get the 4 latest
-    const sortedSelected = [...selectedEntries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  useEffect(() => {
+    fetchPageData();
+  }, [fetchPageData]);
 
-    return sortedSelected
-      .map(entry => {
-        const gameObj = entry.gameId || entry;
-        return gameObj.coverImage || entry.coverImage;
+  // Process Search and Sort
+  const processedLists = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return [...userLists]
+      .filter((list) => {
+        if (!normalizedSearch) return true;
+        const name = list.name?.toLowerCase() || '';
+        return name.includes(normalizedSearch);
       })
-      .filter(Boolean)
-      .slice(0, 4);
-  };
+      .sort((listA, listB) => {
+        const titleA = listA.name || '';
+        const titleB = listB.name || '';
+        const dateA = new Date(listA.updatedAt || listA.createdAt || 0).getTime();
+        const dateB = new Date(listB.updatedAt || listB.createdAt || 0).getTime();
 
-  const selectedCovers = getLatestCoverImages();
+        switch (sortRule) {
+          case 'date_asc': return dateA - dateB;
+          case 'title_asc': return titleA.localeCompare(titleB);
+          case 'title_desc': return titleB.localeCompare(titleA);
+          case 'date_desc':
+          default: return dateB - dateA;
+        }
+      });
+  }, [userLists, searchQuery, sortRule]);
 
-  const handleCreateList = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  // Pagination Logic
+  const effectiveItemsPerPage = itemsPerPage === 'All' ? Math.max(processedLists.length, 1) : itemsPerPage;
+  const totalPages = Math.max(1, Math.ceil(processedLists.length / effectiveItemsPerPage));
 
-    try {
-      setIsSubmitting(true);
-      setError('');
+  const paginatedLists = useMemo(() => {
+    if (itemsPerPage === 'All') return processedLists;
+    const startingIndex = (currentPage - 1) * itemsPerPage;
+    return processedLists.slice(startingIndex, startingIndex + itemsPerPage);
+  }, [processedLists, currentPage, itemsPerPage]);
 
-      const payload = {
-        name: name.trim(),
-        isPublic: false,
-        coverImage: selectedCovers.length > 0 ? selectedCovers[0] : null,
-        entryIds: selectedEntryIds
-      };
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
-      const res = await api.post('/lists', payload, currentToken);
-      const resData = await res.json();
-
-      if (res.ok) {
-        navigate('/lists'); 
-      } else {
-        setError(resData.error || "Failed to create list.");
-      }
-    } catch (err) {
-      setError(`Error: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleItemsPerPageChange = (value) => {
+    const newValue = value === 'All' ? 'All' : Number(value);
+    setItemsPerPage(newValue);
+    localStorage.setItem('cartridge_lists_per_page', String(newValue));
+    setCurrentPage(1);
   };
 
   return (
-    <DashboardLayout>
-      <div style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '48px' }}>
+    <DashboardLayout
+      showSearch
+      searchValue={searchQuery}
+      searchPlaceholder="Search your lists..."
+      onSearchChange={(value) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+      }}
+    >
+      {/* Add Game Modal (Bridge for List Modals) */}
+      <AddGameModal 
+        isOpen={isAddGameModalOpen} 
+        onClose={() => {
+          setIsAddGameModalOpen(false);
+          if (editListDraft) {
+            setListToEdit(editListDraft.list);
+          } else if (returnToListModal) {
+            setIsCreateListOpen(true);
+            setReturnToListModal(false);
+          }
+        }} 
+        onSaveSuccess={(newEntryData) => {
+          fetchPageData();
+          const finalEntryId = typeof newEntryData === 'object' ? (newEntryData?._id || newEntryData?.entryId) : newEntryData;
+          if (returnToListModal && finalEntryId) setTempSelectedEntryIds(prev => [...prev, finalEntryId]);
+          if (editListDraft && finalEntryId) {
+            setEditListDraft(prev => ({ ...prev, selectedEntryIds: [...prev.selectedEntryIds, finalEntryId] }));
+          }
+        }}
+      />
+
+      {/* Create List Modal */}
+      <CreateListModal 
+        isOpen={isCreateListOpen}
+        onClose={() => {
+          setIsCreateListOpen(false);
+          setTempListName('');
+          setTempSelectedEntryIds([]);
+        }}
+        prefilledName={tempListName}
+        prefilledSelectedIds={tempSelectedEntryIds}
+        onStateChange={(name, ids) => {
+          setTempListName(name);
+          setTempSelectedEntryIds(ids);
+        }}
+        onListCreated={() => fetchPageData()}
+        onOpenAddGameModal={() => {
+          setReturnToListModal(true);
+          setIsCreateListOpen(false);
+          setIsAddGameModalOpen(true);
+        }}
+      />
+
+      {/* Edit List Modal */}
+      <EditListModal
+        isOpen={listToEdit !== null}
+        list={listToEdit}
+        draftSnapshot={editListDraft}
+        onClose={() => {
+          setListToEdit(null);
+          setEditListDraft(null);
+        }}
+        onListUpdated={() => fetchPageData()}
+        onListDeleted={() => fetchPageData()}
+        onOpenAddGameModal={(draft) => {
+          setEditListDraft(draft);
+          setListToEdit(null);
+          setIsAddGameModalOpen(true);
+        }}
+      />
+
+      {/* Header Section */}
+      <section style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="font-vt323" style={{ margin: 0, color: '#143910', fontSize: '42px', letterSpacing: '1px', lineHeight: 1 }}>
+              My Lists
+            </h1>
+            <p style={{ margin: '8px 0 0 0', color: '#6B7280', fontSize: '14px' }}>
+              Showing {processedLists.length} {processedLists.length === 1 ? 'list' : 'lists'}
+              {userLists.length !== processedLists.length && ` out of ${userLists.length}`}.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => setIsCreateListOpen(true)} style={{ padding: '10px 20px', fontSize: '14px' }}>
+            + Add List
+          </Button>
+        </div>
+      </section>
+
+      {error && (
+        <div role="alert" style={{ marginBottom: '24px', padding: '14px 16px', borderRadius: '8px', border: '1px solid #FCA5A5', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '14px', fontWeight: '600' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Layout Grid: Sorting Sidebar + Content */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-          <button 
-            onClick={() => navigate(-1)} 
-            style={{ background: 'none', border: 'none', color: '#143910', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            ← Back
-          </button>
-          <h2 className="font-vt323" style={{ fontSize: '36px', color: '#143910', margin: 0, letterSpacing: '1px' }}>
-            Create New List
-          </h2>
+        {/* Sorting controls */}
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label htmlFor="list-sort" style={{ color: '#143910', fontSize: '14px', fontWeight: '700' }}>
+              Sort By:
+            </label>
+            <select
+              id="list-sort"
+              value={sortRule}
+              onChange={(e) => { setSortRule(e.target.value); setCurrentPage(1); }}
+              style={{ padding: '9px 10px', borderRadius: '6px', border: '2px solid #143910', backgroundColor: '#FFFFFF', color: '#143910', fontFamily: 'Inter', fontSize: '13px', fontWeight: '600', outline: 'none' }}
+            >
+              <option value="date_desc">Last Updated: Newest</option>
+              <option value="date_asc">Last Updated: Oldest</option>
+              <option value="title_asc">Title: A–Z</option>
+              <option value="title_desc">Title: Z–A</option>
+            </select>
+          </div>
         </div>
 
-        {error && <div style={{ color: '#DC2626', marginBottom: '16px', fontWeight: '600' }}>{error}</div>}
+        {/* Content */}
+        <section>
+          {isLoading ? (
+            <div style={{ padding: '70px 20px', textAlign: 'center', color: '#143910', fontSize: '15px', fontWeight: '700' }}>
+              Loading your lists...
+            </div>
+          ) : userLists.length === 0 ? (
+            <div style={{ padding: '70px 24px', textAlign: 'center', border: '2px dashed #98B910', borderRadius: '16px', backgroundColor: '#F9FAFB' }}>
+              <div style={{ marginBottom: '14px', fontSize: '48px' }}>📋</div>
+              <h2 className="font-vt323" style={{ margin: '0 0 10px 0', color: '#143910', fontSize: '30px' }}>You Have No Lists</h2>
+              <p style={{ maxWidth: '440px', margin: '0 auto 22px auto', color: '#6B7280', fontSize: '14px', lineHeight: 1.5 }}>
+                Group your favorite games, backlog, or genres into custom lists.
+              </p>
+              <Button variant="primary" onClick={() => setIsCreateListOpen(true)}>
+                + Create Your First List
+              </Button>
+            </div>
+          ) : processedLists.length === 0 ? (
+            <div style={{ padding: '70px 24px', textAlign: 'center', border: '2px dashed #D1D5DB', borderRadius: '16px', backgroundColor: '#F9FAFB' }}>
+              <div style={{ marginBottom: '14px', fontSize: '42px' }}>🔍</div>
+              <h2 className="font-vt323" style={{ margin: '0 0 10px 0', color: '#143910', fontSize: '30px' }}>No Matching Lists</h2>
+              <p style={{ margin: '0 0 20px 0', color: '#6B7280', fontSize: '14px' }}>Try changing your search query.</p>
+              <Button variant="tertiary" onClick={() => setSearchQuery('')} style={{ border: '1px solid #98B910', color: '#143910' }}>
+                Clear Search
+              </Button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+              {paginatedLists.map((list) => (
+                <ListCard
+                  key={list._id}
+                  list={list}
+                  entries={userCollection
+                    .filter((entry) => getEntryListIds(entry).includes(list._id?.toString()))
+                    .sort((entryA, entryB) => new Date(entryB.createdAt || 0) - new Date(entryA.createdAt || 0))
+                  }
+                  showActions
+                  onView={() => navigate(`/collection?list=${encodeURIComponent(list._id)}`)}
+                  onEdit={() => setListToEdit(list)}
+                />
+              ))}
+            </div>
+          )}
 
-        <form onSubmit={handleCreateList} style={{ display: 'flex', flexDirection: 'column', gap: '24px', backgroundColor: '#FFFFFF', padding: '32px', borderRadius: '12px', border: '4px solid #143910' }}>
-          
-          {/* List Name Input */}
-          <div>
-            <label style={{ fontWeight: '700', color: '#143910', fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-              List Name *
-            </label>
-            <input 
-              type="text" 
-              placeholder="e.g. Favorite RPGs of All Time" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #143910', fontFamily: 'Inter', fontSize: '16px', outline: 'none', boxSizing: 'border-box' }} 
-              autoFocus
-              required
-            />
-          </div>
+          {/* Pagination */}
+          {!isLoading && processedLists.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '32px', paddingTop: '24px', borderTop: '2px solid #F3F4F6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label htmlFor="items-per-page" style={{ color: '#6B7280', fontSize: '13px' }}>Show:</label>
+                <select
+                  id="items-per-page"
+                  value={itemsPerPage}
+                  onChange={(e) => handleItemsPerPageChange(e.target.value)}
+                  style={{ padding: '7px 8px', borderRadius: '5px', border: '1px solid #D1D5DB', backgroundColor: '#FFFFFF', fontFamily: 'Inter', fontSize: '13px' }}
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={20}>20 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value="All">All lists</option>
+                </select>
+              </div>
 
-          {/* Cover Preview Section (4 latest games) */}
-          <div>
-            <label style={{ fontWeight: '700', color: '#143910', fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-              Cover Preview (4 Latest Games Collage)
-            </label>
-            <div style={{
-              width: '100%', height: '140px', backgroundColor: '#EBE5F0', borderRadius: '8px', border: '2px solid #143910',
-              display: 'grid', gridTemplateColumns: selectedCovers.length > 1 ? 'repeat(2, 1fr)' : '1fr', gridTemplateRows: selectedCovers.length > 2 ? 'repeat(2, 1fr)' : '1fr',
-              overflow: 'hidden', gap: '2px', padding: '2px', boxSizing: 'border-box'
-            }}>
-              {selectedCovers.length > 0 ? (
-                selectedCovers.map((imgUrl, idx) => (
-                  <img key={idx} src={imgUrl} alt="Cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ))
-              ) : (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#6B7280', fontSize: '14px', fontStyle: 'italic', gridColumn: '1 / -1', gridRow: '1 / -1' }}>
-                  Select games from your collection below to generate cover
+              {itemsPerPage !== 'All' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <Button variant="primary" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} style={{ padding: '8px 14px' }}>Previous</Button>
+                  <span style={{ color: '#374151', fontSize: '13px', fontWeight: '700' }}>Page {currentPage} of {totalPages}</span>
+                  <Button variant="primary" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} style={{ padding: '8px 14px' }}>Next</Button>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Collection Games Selector */}
-          <div>
-            <label style={{ fontWeight: '700', color: '#143910', fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-              Add Games from Collection
-            </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', borderRadius: '8px', border: '2px solid #143910', maxHeight: '200px', overflowY: 'auto', backgroundColor: '#F9FAFB' }}>
-              {isLoading ? (
-                <span style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', padding: '16px' }}>Loading collection...</span>
-              ) : userEntries.length === 0 ? (
-                <span style={{ fontSize: '14px', color: '#6B7280', textAlign: 'center', padding: '16px' }}>No games in your collection yet.</span>
-              ) : (
-                userEntries.map(entry => {
-                  const gameObj = entry.gameId || entry;
-                  const gameTitle = gameObj.name || entry.name || 'Unknown Game';
-                  const entryId = entry._id;
-                  const isChecked = selectedEntryIds.includes(entryId);
-
-                  return (
-                    <label key={entryId} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', color: '#111827', padding: '4px 0' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked} 
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedEntryIds([...selectedEntryIds, entryId]);
-                          } else {
-                            setSelectedEntryIds(selectedEntryIds.filter(id => id !== entryId));
-                          }
-                        }}
-                        style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-                      />
-                      {gameTitle}
-                    </label>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Footer Form Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-            <Button variant="tertiary" type="button" onClick={() => navigate(-1)}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={!name.trim() || isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create List'}
-            </Button>
-          </div>
-
-        </form>
-
+          )}
+        </section>
       </div>
     </DashboardLayout>
   );

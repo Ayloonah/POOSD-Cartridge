@@ -126,7 +126,7 @@ export default function ListCard({
       {/* Auto-generated collage */}
       <div
         style={{
-          height: compact ? '176px' : '200px',
+          height: compact ? '210px' : '260px',
           marginBottom: '16px',
           borderRadius: '10px',
           overflow: 'hidden',

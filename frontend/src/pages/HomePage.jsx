@@ -59,17 +59,19 @@ export default function HomePage() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [entryToEdit, setEntryToEdit] = useState(null); 
   const [listToEdit, setListToEdit] = useState(null);
-  const [recentLists, setRecentLists] = useState([]);
 
   // Bridge memory for list creation state while adding a game on the fly
   const [tempListName, setTempListName] = useState('');
   const [tempSelectedEntryIds, setTempSelectedEntryIds] = useState([]);
   const [returnToListModal, setReturnToListModal] = useState(false);
-
+  
+  // 🟢 Bridge memory for editing a list while adding a game on the fly
+  const [editListDraft, setEditListDraft] = useState(null);
 
   const [allGames, setAllGames] = useState([]); 
   const [recentGames, setRecentGames] = useState([]);
   const [myLists, setMyLists] = useState([]);
+  const [recentLists, setRecentLists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -87,35 +89,21 @@ export default function HomePage() {
         setRecentGames(normalizedEntries.slice(0, 5));
       }
 
-      const listsRes = await api.get(
-  '/lists',
-  currentToken
-);
+      const listsRes = await api.get('/lists', currentToken);
 
-  if (listsRes.ok) {
-    const listsData = await listsRes.json();
+      if (listsRes.ok) {
+        const listsData = await listsRes.json();
+        const listsArray = Array.isArray(listsData) ? listsData : [];
 
-    const listsArray = Array.isArray(listsData)
-      ? listsData
-      : [];
+        const sortedLists = [...listsArray].sort(
+          (listA, listB) =>
+            new Date(listB.updatedAt || listB.createdAt || 0) -
+            new Date(listA.updatedAt || listA.createdAt || 0)
+        );
 
-    const sortedLists = [...listsArray].sort(
-      (listA, listB) =>
-        new Date(
-          listB.updatedAt ||
-            listB.createdAt ||
-            0
-        ) -
-        new Date(
-          listA.updatedAt ||
-            listA.createdAt ||
-            0
-        )
-    );
-
-    setMyLists(sortedLists);
-    setRecentLists(sortedLists.slice(0, 5));
-  }
+        setMyLists(sortedLists);
+        setRecentLists(sortedLists.slice(0, 5));
+      }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
       setError("Failed to load dashboard data.");
@@ -137,15 +125,34 @@ export default function HomePage() {
         isOpen={isAddModalOpen} 
         onClose={() => {
           setIsAddModalOpen(false);
-          if (returnToListModal) {
+
+          // 🟢 Restore Edit List Modal if applicable
+          if (editListDraft) {
+            setListToEdit(editListDraft.list);
+          } else if (returnToListModal) {
             setIsCreateListOpen(true);
             setReturnToListModal(false);
           }
         }} 
-        onSaveSuccess={(newEntryId) => {
+        onSaveSuccess={(newEntryData) => {
           fetchDashboardData();
-          if (returnToListModal && newEntryId) {
-            setTempSelectedEntryIds(prev => [...prev, newEntryId]);
+          
+          // Ensure we extract the pure string ID regardless of what the AddGameModal passed back
+          const finalEntryId = typeof newEntryData === 'object' 
+            ? (newEntryData?._id || newEntryData?.entryId) 
+            : newEntryData;
+
+          // Push the new game to the Create List draft
+          if (returnToListModal && finalEntryId) {
+            setTempSelectedEntryIds(prev => [...prev, finalEntryId]);
+          }
+
+          // 🟢 Push the new game to the Edit List draft
+          if (editListDraft && finalEntryId) {
+            setEditListDraft(prev => ({
+              ...prev,
+              selectedEntryIds: [...prev.selectedEntryIds, finalEntryId]
+            }));
           }
         }}
         onOpenEditModal={(duplicateId) => {
@@ -175,15 +182,23 @@ export default function HomePage() {
           setIsAddModalOpen(true);
         }}
       />
+
+      {/* Edit List Modal */}
       <EditListModal
         isOpen={listToEdit !== null}
         list={listToEdit}
-        onClose={() => setListToEdit(null)}
-        onListUpdated={() => {
-          fetchDashboardData();
+        draftSnapshot={editListDraft} // 🟢 Pass the draft state in to resume smoothly
+        onClose={() => {
+          setListToEdit(null);
+          setEditListDraft(null); // Clear the draft when manually closing
         }}
-        onListDeleted={() => {
-          fetchDashboardData();
+        onListUpdated={() => fetchDashboardData()}
+        onListDeleted={() => fetchDashboardData()}
+        onOpenAddGameModal={(draft) => {
+          // 🟢 Save progress locally, close list, open add game
+          setEditListDraft(draft);
+          setListToEdit(null);
+          setIsAddModalOpen(true);
         }}
       />
 
@@ -231,7 +246,11 @@ export default function HomePage() {
             <Button 
               variant="primary" 
               style={{ padding: '8px 16px', borderRadius: '4px' }}
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setReturnToListModal(false);
+                setEditListDraft(null);
+                setIsAddModalOpen(true);
+              }}
             >
               + Add Game
             </Button>
@@ -316,7 +335,7 @@ export default function HomePage() {
                 onView={() =>
                   navigate(
                     `/collection?list=${encodeURIComponent(
-                      list._id
+                      list.name
                     )}`
                   )
                 }
