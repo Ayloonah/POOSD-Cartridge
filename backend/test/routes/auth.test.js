@@ -15,10 +15,16 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../../src/uti
 const TEST_DOMAIN = 'authtest.cartridgeapp.fun';
 const uniqueEmail = (label) => `${label}-${new mongoose.Types.ObjectId()}@${TEST_DOMAIN}`;
 
+// main picked up server-side password complexity enforcement (register,
+// resetPassword, and account's password-change branch all now require
+// 8-14 chars with upper/lower/digit/special) — every password that goes
+// through one of those endpoints in this file needs to satisfy it.
+const COMPLIANT_PASSWORD = 'Passw0rd!';
+
 const testUser = {
     username: 'NotARealGamer',
     email: 'NotARealGamer@cartridgeapp.fun',
-    password: 'password123'
+    password: COMPLIANT_PASSWORD
 };
 
 beforeAll(async () => {
@@ -95,8 +101,8 @@ describe('Authentication Flow Suite', () => {
                 .send({
                     username: testUser.username.toUpperCase(),
                     email: uniqueEmail('dupuser'),
-                    password: 'password123',
-                    confirmPassword: 'password123'
+                    password: COMPLIANT_PASSWORD,
+                    confirmPassword: COMPLIANT_PASSWORD
                 });
 
             expect(res.statusCode).toBe(400);
@@ -109,8 +115,8 @@ describe('Authentication Flow Suite', () => {
                 .send({
                     username: 'BrandNewUsername',
                     email: testUser.email,
-                    password: 'password123',
-                    confirmPassword: 'password123'
+                    password: COMPLIANT_PASSWORD,
+                    confirmPassword: COMPLIANT_PASSWORD
                 });
 
             expect(res.statusCode).toBe(400);
@@ -204,8 +210,8 @@ describe('Authentication Flow Suite', () => {
                 .send({
                     username: `ToVerify${new mongoose.Types.ObjectId()}`,
                     email,
-                    password: 'password123',
-                    confirmPassword: 'password123'
+                    password: COMPLIANT_PASSWORD,
+                    confirmPassword: COMPLIANT_PASSWORD
                 });
             expect(registerRes.statusCode).toBe(201);
 
@@ -356,7 +362,7 @@ describe('Authentication Flow Suite', () => {
             const user = await User.create({
                 username: `ResetSamePass${new mongoose.Types.ObjectId()}`,
                 email,
-                passwordHash: await hashPassword('OldPassword1'),
+                passwordHash: await hashPassword('OldPass1!'),
                 isVerified: true,
                 resetPasswordToken: 'valid-reset-token',
                 resetPasswordExpires: Date.now() + 600000
@@ -365,7 +371,7 @@ describe('Authentication Flow Suite', () => {
             const res = await request(app)
                 .post('/api/auth/resetPassword')
                 .query({ token: 'valid-reset-token' })
-                .send({ newPassword: 'OldPassword1', confirmNewPassword: 'OldPassword1' });
+                .send({ newPassword: 'OldPass1!', confirmNewPassword: 'OldPass1!' });
 
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toBe('Your new password CANNOT match your previous password.');
@@ -385,14 +391,14 @@ describe('Authentication Flow Suite', () => {
             const res = await request(app)
                 .post('/api/auth/resetPassword')
                 .query({ token: 'another-valid-token' })
-                .send({ newPassword: 'BrandNewPassword1', confirmNewPassword: 'BrandNewPassword1' });
+                .send({ newPassword: 'NewPass1!', confirmNewPassword: 'NewPass1!' });
 
             expect(res.statusCode).toBe(200);
             expect(res.body.message).toBe('Password updated! You may now log into your account.');
 
             const loginRes = await request(app)
                 .post('/api/auth/login')
-                .send({ email, password: 'BrandNewPassword1' });
+                .send({ email, password: 'NewPass1!' });
             expect(loginRes.statusCode).toBe(200);
 
             const updated = await User.findById(user._id);
@@ -532,7 +538,15 @@ describe('Authentication Flow Suite', () => {
                 const res = await request(app)
                     .put('/api/auth/account')
                     .set('Authorization', `Bearer ${token}`)
-                    .send({ newPassword: 'NewPassword1', currentPassword: 'WrongCurrent1' });
+                    // confirmNewPassword must match newPassword here — the mismatch
+                    // check now runs before the current-password check, so leaving
+                    // it out would report a mismatch instead of the wrong-password
+                    // case this test is actually after.
+                    .send({
+                        newPassword: 'NewPassword1!',
+                        confirmNewPassword: 'NewPassword1!',
+                        currentPassword: 'WrongCurrent1'
+                    });
 
                 expect(res.statusCode).toBe(400);
                 expect(res.body.message).toBe('Incorrect current password. Action denied.');
@@ -543,8 +557,8 @@ describe('Authentication Flow Suite', () => {
                     .put('/api/auth/account')
                     .set('Authorization', `Bearer ${token}`)
                     .send({
-                        newPassword: 'NewPassword1',
-                        confirmNewPassword: 'NewPassword1',
+                        newPassword: 'NewPass1!',
+                        confirmNewPassword: 'NewPass1!',
                         currentPassword: 'password123'
                     });
 
@@ -552,7 +566,7 @@ describe('Authentication Flow Suite', () => {
 
                 const loginRes = await request(app)
                     .post('/api/auth/login')
-                    .send({ email, password: 'NewPassword1' });
+                    .send({ email, password: 'NewPass1!' });
                 expect(loginRes.statusCode).toBe(200);
             });
         });
