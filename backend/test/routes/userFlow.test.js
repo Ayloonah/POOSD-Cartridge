@@ -10,7 +10,10 @@ const GameUserEntry = require('../../src/models/gameUserEntry');
 describe('User Integration Flow', () => {
 
     let email;
-    let password = 'password123';
+    // Must satisfy the server-side password complexity check (upper/lower/
+    // digit/special, 8-14 chars) added to register/resetPassword/account
+    // after this test was originally written.
+    let password = 'Passw0rd!';
 
     let user;
     let token;

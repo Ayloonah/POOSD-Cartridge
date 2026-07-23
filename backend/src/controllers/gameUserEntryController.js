@@ -11,6 +11,25 @@ const validIds = (...ids) => {
     );
 };
 
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const SORT_STAGES = {
+    date_desc: { createdAt: -1 },
+    date_asc: { createdAt: 1 },
+    title_asc: { "game.name": 1 },
+    title_desc: { "game.name": -1 },
+    dev_asc: { primaryDeveloper: 1 },
+    dev_desc: { primaryDeveloper: -1 },
+    rate_desc: { rating: -1 },
+    rate_asc: { rating: 1 }
+};
+
+const splitParam = (value) =>
+    (value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
 const addGameToUserList = async (req, res) =>{
     try{
         const userId = req.user.userId;
@@ -134,14 +153,190 @@ const getUserCollection = async (req, res) => {
             });
         }
 
-        const entries = await GameUserEntry.find({
-            userId
-        }).select(entryFields).populate({
-            path: "gameId",
-            select: gameSummaryFields
-        });
+        const {
+            page,
+            limit,
+            search,
+            listIds,
+            played,
+            yearMin,
+            yearMax,
+            developers,
+            genres,
+            sort
+        } = req.query;
 
-        res.status(200).json(entries);
+        // Pagination is opt-in via page/limit — callers that don't ask for it
+        // (the mobile app, which does its own client-side rendering over the
+        // full collection) get the exact same unpaginated array response as
+        // before, untouched.
+        const wantsPagination = page !== undefined || limit !== undefined;
+
+        if (!wantsPagination) {
+            const entries = await GameUserEntry.find({
+                userId
+            }).select(entryFields).populate({
+                path: "gameId",
+                select: gameSummaryFields
+            });
+
+            return res.status(200).json(entries);
+        }
+
+        const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const skip = (pageNumber - 1) * pageSize;
+
+        const selectedListIds = splitParam(listIds)
+            .filter((id) => mongoose.Types.ObjectId.isValid(id))
+            .map((id) => new mongoose.Types.ObjectId(id));
+        const selectedDevelopers = splitParam(developers);
+        const selectedGenres = splitParam(genres);
+
+        const parsedYearMin = yearMin ? parseInt(yearMin, 10) : null;
+        const parsedYearMax = yearMax ? parseInt(yearMax, 10) : null;
+
+        const filterStages = [];
+        const searchTerm = (search || "").trim();
+
+        if (searchTerm) {
+            const searchPattern = new RegExp(escapeRegex(searchTerm), "i");
+            filterStages.push({
+                $match: {
+                    $or: [
+                        { "game.name": searchPattern },
+                        { "game.developers": searchPattern },
+                        { "game.genres": searchPattern },
+                        { platformPlayed: searchPattern },
+                        { review: searchPattern }
+                    ]
+                }
+            });
+        }
+
+        if (selectedListIds.length > 0) {
+            filterStages.push({ $match: { listIds: { $in: selectedListIds } } });
+        }
+
+        if (played === "true") {
+            filterStages.push({ $match: { played: true } });
+        } else if (played === "false") {
+            filterStages.push({ $match: { played: { $ne: true } } });
+        }
+
+        if (parsedYearMin || parsedYearMax) {
+            const yearConditions = [];
+            if (parsedYearMin) {
+                yearConditions.push({ $gte: [{ $year: "$game.releaseDate" }, parsedYearMin] });
+            }
+            if (parsedYearMax) {
+                yearConditions.push({ $lte: [{ $year: "$game.releaseDate" }, parsedYearMax] });
+            }
+            filterStages.push({
+                $match: {
+                    "game.releaseDate": { $type: "date" },
+                    $expr: yearConditions.length > 1 ? { $and: yearConditions } : yearConditions[0]
+                }
+            });
+        }
+
+        if (selectedDevelopers.length > 0) {
+            filterStages.push({ $match: { "game.developers": { $in: selectedDevelopers } } });
+        }
+
+        if (selectedGenres.length > 0) {
+            filterStages.push({ $match: { "game.genres": { $in: selectedGenres } } });
+        }
+
+        const sortStage = SORT_STAGES[sort] || SORT_STAGES.date_desc;
+
+        const pipeline = [
+            { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+            {
+                $lookup: {
+                    from: "games",
+                    localField: "gameId",
+                    foreignField: "_id",
+                    as: "game"
+                }
+            },
+            { $unwind: "$game" },
+            {
+                $addFields: {
+                    primaryDeveloper: {
+                        $ifNull: [{ $arrayElemAt: ["$game.developers", 0] }, ""]
+                    }
+                }
+            },
+            {
+                // developers/genres reflect the whole collection regardless of
+                // the filters below, so the sidebar can always show every
+                // option — only entries/totalCount are actually filtered.
+                // (Mongo doesn't allow nesting $facet inside $facet, so
+                // entries/totalCount each re-apply filterStages independently
+                // as siblings instead of sharing a nested sub-pipeline.)
+                $facet: {
+                    developers: [
+                        { $unwind: "$game.developers" },
+                        { $group: { _id: "$game.developers" } },
+                        { $sort: { _id: 1 } }
+                    ],
+                    genres: [
+                        { $unwind: "$game.genres" },
+                        { $group: { _id: "$game.genres" } },
+                        { $sort: { _id: 1 } }
+                    ],
+                    entries: [
+                        ...filterStages,
+                        { $sort: sortStage },
+                        { $skip: skip },
+                        { $limit: pageSize }
+                    ],
+                    totalCount: [
+                        ...filterStages,
+                        { $count: "count" }
+                    ]
+                }
+            }
+        ];
+
+        const [facetResult] = await GameUserEntry.aggregate(pipeline);
+
+        const rawEntries = facetResult.entries || [];
+        const totalCount = facetResult.totalCount[0]?.count || 0;
+
+        const entries = rawEntries.map((doc) => ({
+            _id: doc._id,
+            gameId: {
+                _id: doc.game._id,
+                name: doc.game.name,
+                coverImage: doc.game.coverImage,
+                genres: doc.game.genres,
+                platforms: doc.game.platforms,
+                releaseDate: doc.game.releaseDate,
+                developers: doc.game.developers
+            },
+            listIds: doc.listIds,
+            played: doc.played,
+            hoursPlayed: doc.hoursPlayed,
+            rating: doc.rating,
+            review: doc.review,
+            platformPlayed: doc.platformPlayed,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt
+        }));
+
+        res.status(200).json({
+            entries,
+            page: pageNumber,
+            pageSize,
+            totalCount,
+            totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+            filterOptions: {
+                developers: facetResult.developers.map((entry) => entry._id),
+                genres: facetResult.genres.map((entry) => entry._id)
+            }
+        });
     } catch (error) {
         res.status(500).json({
             error: error.message

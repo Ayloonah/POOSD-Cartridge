@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
+import '../widgets/app_header_logo.dart';
 import 'game_entry_form_screen.dart';
 
 // Fallback for when a searched game isn't found in the cache or on RAWG.
@@ -123,15 +124,7 @@ class _ManualGameFormScreenState extends State<ManualGameFormScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),

@@ -120,7 +120,138 @@ describe('User game entry routes', () => {
                 .set('Authorization', `Bearer ${tokenA}`);
 
             expect(res.statusCode).toBe(200);
+            expect(Array.isArray(res.body)).toBe(true);
             expect(res.body.every((entry) => entry.gameId?.name !== 'UserB Game')).toBe(true);
+        });
+
+        describe('pagination (page/limit query params)', () => {
+            // A dedicated user for this describe block, so its entry count
+            // isn't affected by other tests creating entries for userA/userB.
+            let pagingUser, pagingToken;
+
+            beforeAll(async () => {
+                ({ user: pagingUser, token: pagingToken } = await createVerifiedUser());
+
+                const gameDefs = [
+                    { name: 'Alpha Quest', developers: ['Nintendo'], genres: ['RPG'], releaseDate: new Date('2010-01-01') },
+                    { name: 'Beta Raiders', developers: ['Valve'], genres: ['Action'], releaseDate: new Date('2015-01-01') },
+                    { name: 'Gamma Storm', developers: ['Nintendo'], genres: ['Action', 'RPG'], releaseDate: new Date('2020-01-01') },
+                    { name: 'Delta Force', developers: ['Sega'], genres: ['Shooter'], releaseDate: new Date('2005-01-01') },
+                    { name: 'Epsilon Rally', developers: ['Sega'], genres: ['Racing'], releaseDate: new Date('2018-01-01') }
+                ];
+
+                for (const def of gameDefs) {
+                    const game = await Game.create({ ...def, source: 'manual' });
+                    await GameUserEntry.create({
+                        userId: pagingUser._id,
+                        gameId: game._id,
+                        played: def.name === 'Alpha Quest' || def.name === 'Gamma Storm',
+                        rating: def.name === 'Alpha Quest' ? 5 : undefined,
+                        platformPlayed: def.name === 'Beta Raiders' ? 'PC' : undefined
+                    });
+                }
+            });
+
+            it('returns only a page worth of entries, with count metadata, when page/limit are given', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 2 })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.statusCode).toBe(200);
+                expect(res.body.entries).toHaveLength(2);
+                expect(res.body.page).toBe(1);
+                expect(res.body.pageSize).toBe(2);
+                expect(res.body.totalCount).toBe(5);
+                expect(res.body.totalPages).toBe(3);
+            });
+
+            it('returns a different slice on page 2, with no overlap with page 1', async () => {
+                const page1 = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 2 })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+                const page2 = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 2, limit: 2 })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                const page1Ids = page1.body.entries.map((e) => e._id);
+                const page2Ids = page2.body.entries.map((e) => e._id);
+
+                expect(page2.body.entries).toHaveLength(2);
+                expect(page1Ids.some((id) => page2Ids.includes(id))).toBe(false);
+            });
+
+            it('includes filterOptions listing every developer/genre in the whole collection', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 2 })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.filterOptions.developers.sort()).toEqual(['Nintendo', 'Sega', 'Valve']);
+                expect(res.body.filterOptions.genres.sort()).toEqual(['Action', 'RPG', 'Racing', 'Shooter']);
+            });
+
+            it('filters by search term across game name', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, search: 'raiders' })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.totalCount).toBe(1);
+                expect(res.body.entries[0].gameId.name).toBe('Beta Raiders');
+            });
+
+            it('filters by played status', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, played: 'true' })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.totalCount).toBe(2);
+                expect(res.body.entries.every((e) => e.played)).toBe(true);
+            });
+
+            it('filters by developer', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, developers: 'Sega' })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.totalCount).toBe(2);
+                expect(res.body.entries.every((e) => e.gameId.developers.includes('Sega'))).toBe(true);
+            });
+
+            it('filters by genre', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, genres: 'RPG' })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.totalCount).toBe(2);
+                expect(res.body.entries.every((e) => e.gameId.genres.includes('RPG'))).toBe(true);
+            });
+
+            it('filters by release year range', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, yearMin: 2016, yearMax: 2019 })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                expect(res.body.totalCount).toBe(1);
+                expect(res.body.entries[0].gameId.name).toBe('Epsilon Rally');
+            });
+
+            it('sorts by title A-Z', async () => {
+                const res = await request(app)
+                    .get('/api/user-game-entries/collection')
+                    .query({ page: 1, limit: 20, sort: 'title_asc' })
+                    .set('Authorization', `Bearer ${pagingToken}`);
+
+                const names = res.body.entries.map((e) => e.gameId.name);
+                expect(names).toEqual([...names].sort());
+            });
         });
     });
 

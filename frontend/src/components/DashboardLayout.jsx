@@ -7,7 +7,7 @@ import React, {
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import profileIcon from '../assets/Generic avatar.svg';
-import searchIcon from '../assets/search.svg';
+import searchIcon from '../assets/Search.svg';
 import { AuthContext } from '../context/AuthContext';
 import { api } from '../api';
 

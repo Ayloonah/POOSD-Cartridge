@@ -6,6 +6,7 @@ import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
+import '../widgets/app_header_logo.dart';
 import 'game_entry_form_screen.dart';
 
 // Shows everything about one collection entry, and lets the user edit or
@@ -238,15 +239,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),

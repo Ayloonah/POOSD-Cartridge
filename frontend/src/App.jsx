@@ -10,6 +10,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import VerifyEmail from './pages/VerifyEmail';
 import CollectionPage from './pages/CollectionPage';
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
   return (
@@ -17,13 +18,13 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          
-          <Route path="/dashboard" element={<HomePage />} />
-          
-          <Route path="/collection" element={<CollectionPage />} />
-          <Route path="/lists" element={<ListView />} />
+
+          <Route path="/dashboard" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+
+          <Route path="/collection" element={<ProtectedRoute><CollectionPage /></ProtectedRoute>} />
+          <Route path="/lists" element={<ProtectedRoute><ListView /></ProtectedRoute>} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/profile" element={<ProfileSettingsPage />} />
+          <Route path="/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
           <Route path="/reset-password" element={<ForgotPasswordPage />} />
         </Routes>
       </Router>

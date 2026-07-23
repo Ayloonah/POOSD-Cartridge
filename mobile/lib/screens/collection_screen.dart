@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../models/collection_sort_option.dart';
 import '../models/collection_filters.dart';
+import '../widgets/app_header_logo.dart';
 import '../widgets/game_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../widgets/filter_bottom_sheet.dart';
@@ -145,14 +146,19 @@ class CollectionScreenState extends State<CollectionScreen> {
     }
   }
 
+  // Whether an entry's name matches the current search text (or there's no
+  // search text at all, in which case everything matches).
+  bool _matchesSearch(Map<String, dynamic> entry) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+    final name = (entry['name'] ?? '').toString().toLowerCase();
+    return name.contains(query);
+  }
+
   // Recomputes the visible list from _allEntries based on current filters + sort
   void _applySortAndFilter() {
     final result = _allEntries.where((entry) {
-      final query = _searchQuery.trim().toLowerCase();
-      if (query.isNotEmpty) {
-        final name = (entry['name'] ?? '').toString().toLowerCase();
-        if (!name.contains(query)) return false;
-      }
+      if (!_matchesSearch(entry)) return false;
       if (_filters.listIds.isNotEmpty) {
         final entryListIds =
             (entry['listIds'] as List?)?.map((id) => id.toString()).toSet() ??
@@ -220,31 +226,6 @@ class CollectionScreenState extends State<CollectionScreen> {
     _filteredSortedEntries = result;
   }
 
-  // Distinct, sorted values for a list-of-strings field (e.g. genres)
-  List<String> _distinctListValues(String key) {
-    final values = <String>{};
-    for (final entry in _allEntries) {
-      final list = entry[key] as List?;
-      if (list != null) values.addAll(list.map((v) => v.toString()));
-    }
-    return values.toList()..sort();
-  }
-
-  // Min/max release year across the collection, for the filter's range slider
-  (int, int) _releaseYearBounds() {
-    final years = _allEntries
-        .map((entry) => entry['releaseDate'])
-        .where((date) => date != null)
-        .map((date) => DateTime.parse(date).year)
-        .toList();
-    if (years.isEmpty) {
-      final currentYear = DateTime.now().year;
-      return (currentYear, currentYear);
-    }
-    years.sort();
-    return (years.first, years.last);
-  }
-
   Future<void> _openSortSheet() async {
     final result = await showModalBottomSheet<CollectionSortOption>(
       context: context,
@@ -275,27 +256,26 @@ class CollectionScreenState extends State<CollectionScreen> {
     }
   }
 
-  Future<void> _openFilterSheet() async {
-    final (minYear, maxYear) = _releaseYearBounds();
-    final result = await showModalBottomSheet<CollectionFilters>(
+  // Filters apply live as they're picked, rather than needing a separate
+  // "Apply" step — every change comes back through onChanged immediately,
+  // updating the grid behind the sheet while it's still open.
+  void _openFilterSheet() {
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => FilterBottomSheet(
         current: _filters,
+        entries: _allEntries.where(_matchesSearch).toList(),
         availableLists: _availableLists,
-        availableDevelopers: _distinctListValues('developers'),
-        availableGenres: _distinctListValues('genres'),
-        minReleaseYear: minYear,
-        maxReleaseYear: maxYear,
+        onChanged: (updatedFilters) {
+          setState(() {
+            _filters = updatedFilters;
+            _visibleCount = _pageSize;
+            _applySortAndFilter();
+          });
+        },
       ),
     );
-    if (result != null) {
-      setState(() {
-        _filters = result;
-        _visibleCount = _pageSize;
-        _applySortAndFilter();
-      });
-    }
   }
 
   // A light-green pill button used for Add Game / Sort / Filter, matching
@@ -349,15 +329,7 @@ class CollectionScreenState extends State<CollectionScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),

@@ -3,24 +3,24 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import '../models/collection_filters.dart';
 
-// Bottom sheet for staging filter selections before applying them.
-// Pops with the resulting CollectionFilters, or null if dismissed without applying.
+// Bottom sheet for live-editing collection filters — every change is
+// applied immediately via onChanged, no separate "Apply" step. Each facet's
+// own options (except "Belongs to List", which always lists every list)
+// narrow to reflect what the *other* currently-active filters would leave
+// visible, so e.g. picking a developer narrows the genre list, without a
+// filter ever hiding its own currently-selected value.
 class FilterBottomSheet extends StatefulWidget {
   final CollectionFilters current;
-  final List<MapEntry<String, String>> availableLists; // (listId, name)
-  final List<String> availableDevelopers;
-  final List<String> availableGenres;
-  final int minReleaseYear;
-  final int maxReleaseYear;
+  final List<Map<String, dynamic>> entries; // already narrowed by search text
+  final List<MapEntry<String, String>> availableLists; // (listId, name) — always shown in full
+  final ValueChanged<CollectionFilters> onChanged;
 
   const FilterBottomSheet({
     super.key,
     required this.current,
+    required this.entries,
     required this.availableLists,
-    required this.availableDevelopers,
-    required this.availableGenres,
-    required this.minReleaseYear,
-    required this.maxReleaseYear,
+    required this.onChanged,
   });
 
   @override
@@ -31,6 +31,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late Set<String> _listIds;
   bool? _playedFilter;
   late RangeValues _yearRange;
+  bool _yearRangeTouched = false;
   late Set<String> _developers;
   late Set<String> _genres;
 
@@ -40,31 +41,169 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     super.initState();
     _listIds = Set.from(widget.current.listIds);
     _playedFilter = widget.current.playedFilter;
-    _yearRange = widget.current.releaseYearRange ??
-        RangeValues(
-          widget.minReleaseYear.toDouble(),
-          widget.maxReleaseYear.toDouble(),
-        );
     _developers = Set.from(widget.current.developers);
     _genres = Set.from(widget.current.genres);
+    if (widget.current.releaseYearRange != null) {
+      _yearRange = widget.current.releaseYearRange!;
+      _yearRangeTouched = true;
+    } else {
+      _yearRange = const RangeValues(0, 0); // resynced on first build
+    }
   }
 
-  // Resets every field back to "no filter" and applies immediately —
-  // clearing is itself the action here, rather than needing a separate trip
-  // down to "Apply Filters" afterward to actually see the full collection.
+  // Entries matching every active filter EXCEPT the ones named true here —
+  // used to compute each facet's own options against what the *other*
+  // filters would actually leave visible.
+  List<Map<String, dynamic>> _entriesExcluding({
+    bool list = false,
+    bool played = false,
+    bool year = false,
+    bool developers = false,
+    bool genres = false,
+    required RangeValues? activeYearRange,
+  }) {
+    return widget.entries.where((entry) {
+      if (!list && _listIds.isNotEmpty) {
+        final entryListIds = (entry['listIds'] as List?)
+                ?.map((id) => id.toString())
+                .toSet() ??
+            {};
+        if (entryListIds.intersection(_listIds).isEmpty) return false;
+      }
+      if (!played && _playedFilter != null) {
+        final isPlayed = entry['played'] == true;
+        if (isPlayed != _playedFilter) return false;
+      }
+      if (!year && activeYearRange != null) {
+        final releaseDate = entry['releaseDate'];
+        if (releaseDate == null) return false;
+        final entryYear = DateTime.parse(releaseDate).year;
+        if (entryYear < activeYearRange.start.round() ||
+            entryYear > activeYearRange.end.round()) {
+          return false;
+        }
+      }
+      if (!developers && _developers.isNotEmpty) {
+        final entryDevelopers = (entry['developers'] as List?)
+                ?.map((d) => d.toString())
+                .toSet() ??
+            {};
+        if (entryDevelopers.intersection(_developers).isEmpty) return false;
+      }
+      if (!genres && _genres.isNotEmpty) {
+        final entryGenres = (entry['genres'] as List?)
+                ?.map((g) => g.toString())
+                .toSet() ??
+            {};
+        if (entryGenres.intersection(_genres).isEmpty) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  (int, int)? _yearBoundsFrom(List<Map<String, dynamic>> entries) {
+    final years = entries
+        .map((entry) => entry['releaseDate'])
+        .where((date) => date != null)
+        .map((date) => DateTime.parse(date).year)
+        .toList();
+    if (years.isEmpty) return null;
+    years.sort();
+    return (years.first, years.last);
+  }
+
+  void _emitChange() {
+    widget.onChanged(
+      CollectionFilters(
+        listIds: _listIds,
+        playedFilter: _playedFilter,
+        releaseYearRange: _yearRangeTouched ? _yearRange : null,
+        developers: _developers,
+        genres: _genres,
+      ),
+    );
+  }
+
+  // Resets every filter and applies immediately — clearing is itself the
+  // action here, same spirit as every other change in this sheet.
   void _clearAll() {
-    Navigator.pop(context, const CollectionFilters());
+    setState(() {
+      _listIds = {};
+      _playedFilter = null;
+      _yearRangeTouched = false;
+      _developers = {};
+      _genres = {};
+    });
+    _emitChange();
   }
 
   // Sheet contents
   @override
   Widget build(BuildContext context) {
-    final hasYearData = widget.minReleaseYear < widget.maxReleaseYear;
+    // Year bounds/effective range first — developer, genre, and played
+    // facets below need to filter by whatever year range is currently
+    // active (if any).
+    final yearCandidates = _entriesExcluding(year: true, activeYearRange: null);
+    final yearBounds = _yearBoundsFrom(yearCandidates);
+    final hasYearData = yearBounds != null && yearBounds.$1 < yearBounds.$2;
+
+    RangeValues? activeYearRange;
+    RangeValues sliderValues = const RangeValues(0, 0);
+    if (yearBounds != null) {
+      final minD = yearBounds.$1.toDouble();
+      final maxD = yearBounds.$2.toDouble();
+      if (_yearRangeTouched) {
+        // The user's chosen sub-range might now sit outside the (possibly
+        // shrunk) dynamic bounds from other filters changing — clamp for
+        // display so RangeSlider never receives out-of-bounds values.
+        sliderValues = RangeValues(
+          _yearRange.start.clamp(minD, maxD),
+          _yearRange.end.clamp(minD, maxD),
+        );
+        activeYearRange = sliderValues;
+      } else {
+        // Keep tracking the full dynamic range until the user actually
+        // drags the slider — this is what "no year filter active" looks like.
+        sliderValues = RangeValues(minD, maxD);
+        activeYearRange = null;
+      }
+    }
+
+    final developerOptions = <String>{};
+    for (final entry in _entriesExcluding(
+      developers: true,
+      activeYearRange: activeYearRange,
+    )) {
+      final list = entry['developers'] as List?;
+      if (list != null) developerOptions.addAll(list.map((d) => d.toString()));
+    }
+    final sortedDevelopers = developerOptions.toList()..sort();
+
+    final genreOptions = <String>{};
+    for (final entry in _entriesExcluding(
+      genres: true,
+      activeYearRange: activeYearRange,
+    )) {
+      final list = entry['genres'] as List?;
+      if (list != null) genreOptions.addAll(list.map((g) => g.toString()));
+    }
+    final sortedGenres = genreOptions.toList()..sort();
+
+    final playedCandidates = _entriesExcluding(
+      played: true,
+      activeYearRange: activeYearRange,
+    );
+    final anyPlayed = playedCandidates.any((e) => e['played'] == true);
+    final anyUnplayed = playedCandidates.any((e) => e['played'] != true);
 
     return DraggableScrollableSheet(
+      // maxChildSize matches initialChildSize so scrolling through a long
+      // filter list can never grow the sheet toward full-screen — it stays
+      // pinned at 85%, leaving a backdrop strip up top that's always
+      // reachable to tap-dismiss without first scrolling back to the top.
       initialChildSize: 0.85,
       minChildSize: 0.4,
-      maxChildSize: 0.95,
+      maxChildSize: 0.85,
       expand: false,
       builder: (context, scrollController) {
         return SafeArea(
@@ -111,6 +250,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           _listIds.remove(list.key);
                         }
                       });
+                      _emitChange();
                     },
                   ),
               ],
@@ -124,48 +264,65 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 value: null,
                 groupValue: _playedFilter,
                 activeColor: AppColors.lightGreen,
-                onChanged: (value) => setState(() => _playedFilter = value),
+                onChanged: (value) {
+                  setState(() => _playedFilter = value);
+                  _emitChange();
+                },
               ),
-              RadioListTile<bool?>(
-                title: Text('Played', style: GoogleFonts.inter()),
-                value: true,
-                groupValue: _playedFilter,
-                activeColor: AppColors.lightGreen,
-                onChanged: (value) => setState(() => _playedFilter = value),
-              ),
-              RadioListTile<bool?>(
-                title: Text('Not Yet Played', style: GoogleFonts.inter()),
-                value: false,
-                groupValue: _playedFilter,
-                activeColor: AppColors.lightGreen,
-                onChanged: (value) => setState(() => _playedFilter = value),
-              ),
+              if (anyPlayed)
+                RadioListTile<bool?>(
+                  title: Text('Played', style: GoogleFonts.inter()),
+                  value: true,
+                  groupValue: _playedFilter,
+                  activeColor: AppColors.lightGreen,
+                  onChanged: (value) {
+                    setState(() => _playedFilter = value);
+                    _emitChange();
+                  },
+                ),
+              if (anyUnplayed)
+                RadioListTile<bool?>(
+                  title: Text('Not Yet Played', style: GoogleFonts.inter()),
+                  value: false,
+                  groupValue: _playedFilter,
+                  activeColor: AppColors.lightGreen,
+                  onChanged: (value) {
+                    setState(() => _playedFilter = value);
+                    _emitChange();
+                  },
+                ),
               if (hasYearData) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Release Year: ${_yearRange.start.round()} - ${_yearRange.end.round()}',
+                  'Release Year: ${sliderValues.start.round()} - ${sliderValues.end.round()}',
                   style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
                 RangeSlider(
-                  min: widget.minReleaseYear.toDouble(),
-                  max: widget.maxReleaseYear.toDouble(),
-                  divisions: (widget.maxReleaseYear - widget.minReleaseYear).clamp(1, 100),
-                  values: _yearRange,
+                  min: yearBounds.$1.toDouble(),
+                  max: yearBounds.$2.toDouble(),
+                  divisions: (yearBounds.$2 - yearBounds.$1).clamp(1, 100),
+                  values: sliderValues,
                   activeColor: AppColors.lightGreen,
                   labels: RangeLabels(
-                    _yearRange.start.round().toString(),
-                    _yearRange.end.round().toString(),
+                    sliderValues.start.round().toString(),
+                    sliderValues.end.round().toString(),
                   ),
-                  onChanged: (values) => setState(() => _yearRange = values),
+                  onChanged: (values) {
+                    setState(() {
+                      _yearRange = values;
+                      _yearRangeTouched = true;
+                    });
+                    _emitChange();
+                  },
                 ),
               ],
-              if (widget.availableDevelopers.isNotEmpty) ...[
+              if (sortedDevelopers.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Developer',
                   style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
-                for (final developer in widget.availableDevelopers)
+                for (final developer in sortedDevelopers)
                   CheckboxListTile(
                     title: Text(developer, style: GoogleFonts.inter()),
                     value: _developers.contains(developer),
@@ -179,16 +336,17 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           _developers.remove(developer);
                         }
                       });
+                      _emitChange();
                     },
                   ),
               ],
-              if (widget.availableGenres.isNotEmpty) ...[
+              if (sortedGenres.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Genre',
                   style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
-                for (final genre in widget.availableGenres)
+                for (final genre in sortedGenres)
                   CheckboxListTile(
                     title: Text(genre, style: GoogleFonts.inter()),
                     value: _genres.contains(genre),
@@ -202,39 +360,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                           _genres.remove(genre);
                         }
                       });
+                      _emitChange();
                     },
                   ),
               ],
               const SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.lightGreen,
-                  foregroundColor: AppColors.darkGreen,
-                ),
-                onPressed: () {
-                  Navigator.pop(
-                    context,
-                    CollectionFilters(
-                      listIds: _listIds,
-                      playedFilter: _playedFilter,
-                      releaseYearRange: (!hasYearData ||
-                              (_yearRange.start == widget.minReleaseYear.toDouble() &&
-                                  _yearRange.end == widget.maxReleaseYear.toDouble()))
-                          ? null
-                          : _yearRange,
-                      developers: _developers,
-                      genres: _genres,
-                    ),
-                  );
-                },
-                child: Text(
-                  'Apply Filters',
-                  style: GoogleFonts.inter(
-                    color: AppColors.darkGreen,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ],
           ),
         );
