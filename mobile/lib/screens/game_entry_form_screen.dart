@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
+import '../widgets/app_header_logo.dart';
 
 // Shared form for both adding a new collection entry and editing an existing
 // one. When creating, exactly one of gameId / rawgId / newGame should be
@@ -288,15 +289,7 @@ class _GameEntryFormScreenState extends State<GameEntryFormScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),

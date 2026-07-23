@@ -6,6 +6,7 @@ import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../utils/api_normalize.dart';
+import '../widgets/app_header_logo.dart';
 import '../widgets/game_card.dart';
 import '../widgets/list_card.dart';
 import '../models/collection_filters.dart';
@@ -207,15 +208,7 @@ class HomeScreenState extends State<HomeScreen> {
             // evenly above and below it.
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),

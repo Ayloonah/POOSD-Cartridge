@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_state.dart';
+import '../utils/tab_navigation.dart';
 import '../widgets/pending_email_banner.dart';
 import 'home_screen.dart';
 import 'collection_screen.dart';
@@ -45,11 +46,50 @@ class _MainNavScreenState extends State<MainNavScreen> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Lets the header logo on any screen — even one pushed deep within
+    // another tab's own nested Navigator — jump back to the Home tab's
+    // root, since it has no direct way to reach up to this widget otherwise.
+    goToHomeTab = _goToHomeAndReset;
+  }
+
+  @override
+  void dispose() {
+    goToHomeTab = null;
+    super.dispose();
+  }
+
+  // Unlike _goToTab(0) (which, like any other tab switch, leaves Home
+  // wherever it was last left when arriving from a different tab), tapping
+  // the header logo always means "take me to the actual home page" — so
+  // this resets Home's own stack to its root regardless of where it was.
+  void _goToHomeAndReset() {
+    _homeNavKey.currentState?.popUntil((route) => route.isFirst);
+    if (_selectedIndex != 0) {
+      setState(() {
+        _selectedIndex = 0;
+      });
+    }
+    _homeKey.currentState?.refresh();
+  }
+
   // Switch the visible tab. Since the IndexedStack below keeps every tab's
   // screen alive rather than rebuilding it, changes made on one tab (e.g.
   // adding a game from Home) wouldn't otherwise be reflected on the others
   // — so refresh them here on every reselect.
+  //
+  // Re-tapping the tab you're already on (or, via the header logo, jumping
+  // to Home while already there) doesn't switch anything for IndexedStack
+  // to notice, so that case instead pops that tab's own stack back to its
+  // root screen — the usual "tap the active tab to go back to top" behavior.
   void _goToTab(int index) {
+    if (index == _selectedIndex) {
+      _currentNavKey.currentState?.popUntil((route) => route.isFirst);
+      return;
+    }
+
     setState(() {
       _selectedIndex = index;
     });
@@ -88,10 +128,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
       ),
       _tabNavigator(_collectionNavKey, CollectionScreen(key: _collectionKey)),
       _tabNavigator(_listsNavKey, ListsScreen(key: _listsKey)),
-      _tabNavigator(
-        _settingsNavKey,
-        SettingsScreen(onGoBack: () => _goToTab(0)),
-      ),
+      _tabNavigator(_settingsNavKey, const SettingsScreen()),
     ];
 
     return PopScope(

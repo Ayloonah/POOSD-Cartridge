@@ -6,13 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../services/auth_state.dart';
+import '../widgets/app_header_logo.dart';
 import '../widgets/initial_avatar.dart';
 import 'splash_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  final VoidCallback onGoBack;
-
-  const SettingsScreen({super.key, required this.onGoBack});
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -583,36 +582,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return const SizedBox.shrink();
   }
 
-  // A light-green pill button used for Go Back, matching the app's
-  // dark-green-on-light-green treatment used elsewhere
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onPressed,
-  }) {
-    return Expanded(
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18, color: AppColors.darkGreen),
-        label: Text(
-          label,
-          style: GoogleFonts.inter(
-            color: AppColors.darkGreen,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.lightGreen,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          elevation: 0,
-        ),
-      ),
-    );
-  }
-
   // A white input box whose border turns dark green (instead of the app's
   // default purple theme color) when focused
   InputDecoration _fieldDecoration(
@@ -657,36 +626,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),
       ),
       body: Column(
         children: [
-          Container(
-            color: AppColors.darkGreen,
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  _actionButton(
-                    icon: Icons.arrow_back,
-                    label: 'Go Back',
-                    onPressed: widget.onGoBack,
-                  ),
-                ],
-              ),
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Align(

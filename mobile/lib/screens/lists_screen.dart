@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/auth_state.dart';
 import '../models/list_sort_option.dart';
 import '../models/collection_filters.dart';
+import '../widgets/app_header_logo.dart';
 import '../widgets/list_card.dart';
 import '../widgets/sort_bottom_sheet.dart';
 import '../utils/api_normalize.dart';
@@ -227,15 +228,7 @@ class ListsScreenState extends State<ListsScreen> {
             bottom: false,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/cartridge_logo.png', height: 36),
-                  const SizedBox(width: 12),
-                  Image.asset('assets/images/little_logo.png', height: 28),
-                ],
-              ),
+              child: const AppHeaderLogo(),
             ),
           ),
         ),
