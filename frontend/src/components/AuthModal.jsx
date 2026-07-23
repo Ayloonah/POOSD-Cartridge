@@ -54,6 +54,17 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
     setSuccess('');
   };
 
+  // Forgot-password mode is only ever entered from login mode, so returning
+  // from it should land back on Sign In — not flip isLoginMode like
+  // toggleMode does (that flip is what caused "Back to Sign In" to show the
+  // registration form instead).
+  const backToSignIn = () => {
+    setIsLoginMode(true);
+    setIsForgotPasswordMode(false);
+    setError('');
+    setSuccess('');
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -220,7 +231,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }) {
             </button>
           )}
 
-          <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', width: '100%' }}>
+          <button type="button" onClick={isForgotPasswordMode ? backToSignIn : toggleMode} style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', width: '100%' }}>
             {isForgotPasswordMode ? 'Back to Sign In →' : (isLoginMode ? 'Need an account? Register here →' : 'Already have an account? Sign in here →')}
           </button>
 

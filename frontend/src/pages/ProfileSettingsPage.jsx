@@ -25,6 +25,7 @@ const ProfileSettingsPage = () => {
   // Security fields
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   
   // Statuses
   const [pendingEmail, setPendingEmail] = useState(null);
@@ -152,9 +153,20 @@ const ProfileSettingsPage = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
+      if (newPassword !== confirmNewPassword) {
+        setStatusBanner({ type: 'error', text: 'New password and confirmation do not match.' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}[\]:;"'<>,.?/\\|`~]).{8,14}$/;
+      if (!passwordRegex.test(newPassword)) {
+        setStatusBanner({ type: 'error', text: 'New password must be 8-14 characters, with 1 lowercase letter, 1 uppercase letter, 1 number, and 1 special character.' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
       accountPayload.currentPassword = currentPassword;
       accountPayload.newPassword = newPassword;
-      accountPayload.confirmNewPassword = newPassword;
+      accountPayload.confirmNewPassword = confirmNewPassword;
     }
 
     const profilePayload = {
@@ -385,13 +397,33 @@ const ProfileSettingsPage = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b' }}>New Password</label>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 placeholder="Enter new password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
               />
+              <span style={{ fontSize: '12px', color: '#64748b' }}>8-14 chars, 1 lower/uppercase, 1 number, 1 special</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b' }}>Confirm New Password</label>
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+              />
+              {/* Only judge a match once both sides have something to compare —
+                  otherwise every fresh keystroke in an empty confirm field
+                  would flash a false "doesn't match" before it can catch up. */}
+              {newPassword && confirmNewPassword && (
+                <span style={{ fontSize: '13px', fontWeight: '500', color: newPassword === confirmNewPassword ? '#10b981' : '#ef4444' }}>
+                  {newPassword === confirmNewPassword ? '✓ Passwords match' : '❌ Passwords do not match'}
+                </span>
+              )}
             </div>
           </div>
 
