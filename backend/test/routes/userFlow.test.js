@@ -1,3 +1,8 @@
+jest.mock('../../src/utils/email', () => ({
+    sendVerificationEmail: jest.fn().mockResolvedValue(),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue()
+}));
+
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../../server');
