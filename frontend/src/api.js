@@ -1,5 +1,5 @@
-const BASE_URL = 'http://localhost:5000/api';
-//const BASE_URL = 'https://cartridgeapp.fun/api';
+//const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'https://cartridgeapp.fun/api';
 
 export const api = {
   

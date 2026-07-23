@@ -60,7 +60,7 @@ const GameSearchPage = () => {
     
     const delayDebounceFn = setTimeout(async () => {
     try {
-        const response = await fetch(`http://localhost:5000/api/games/search?search=${encodeURIComponent(query)}`);
+        const response = await fetch(`https://cartridgeapp.fun/api/games/search?search=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error("Search endpoint failed");
         const data = await response.json();
 
@@ -147,7 +147,7 @@ const openAddModal = async (game) => {
     if (!id) return;
 
     try {
-      const detailRes = await fetch(`http://localhost:5000/api/games/rawg/${id}`);
+      const detailRes = await fetch(`https://cartridgeapp.fun/api/games/rawg/${id}`);
       if (detailRes.ok) {
         const detailData = await detailRes.json();
         const enrichedGame = {
@@ -224,8 +224,8 @@ const openAddModal = async (game) => {
     }
 
     const url = isExistingEntry 
-      ? `http://localhost:5000/api/gameuserentries/${modalFormData.entryId}`
-      : 'http://localhost:5000/api/gameuserentries';
+      ? `https://cartridgeapp.fun/api/gameuserentries/${modalFormData.entryId}`
+      : 'https://cartridgeapp.fun/api/gameuserentries';
     
     const method = isExistingEntry ? 'PUT' : 'POST';
 
