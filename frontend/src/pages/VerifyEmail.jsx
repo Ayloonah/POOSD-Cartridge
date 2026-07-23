@@ -49,9 +49,6 @@ export default function VerifyEmail() {
 
         </div>
         
-        <p style={{ color: status === 'error' ? '#ff4d4d' : '#FFFFFF', fontSize: '18px', marginBottom: '32px', marginTop: '32px' }}>
-          {message}
-        </p>
 
         {status !== 'loading' && (
           <Link to="/?openModal=login" style={{ backgroundColor: '#98B910', color: '#143910', padding: '12px 24px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
